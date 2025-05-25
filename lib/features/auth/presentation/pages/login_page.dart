@@ -1,4 +1,9 @@
+import 'dart:async';
+
+import 'package:ayudantia_software/main.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart';
 import '/features/auth/presentation/widgets/custom_text_field.dart';
 
 class LoginPage extends StatefulWidget {
@@ -13,12 +18,89 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _passwordVisible = false;
   bool _loading = false;
+  bool _redirecting = false;
+  late final StreamSubscription<AuthState> _authStateSubscription;
 
   @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  void initState() {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
+      (data) {
+        if (_redirecting) return;
+        final session = data.session;
+        if (session != null) {
+          _redirecting = true;
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const ProfilePage()),
+            );
+          }
+        }
+      },
+      onError: (error) {
+        if (!mounted) return;
+        if (error is AuthException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Unexpected error occurred'),
+              backgroundColor: Colors.red),
+          );
+        }
+      },
+    );
+    super.initState();
+  }
+
+  Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Por favor, ingresa tu correo y contraseña.")),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      await supabase.auth.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+      }
+    } on AuthException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Error al iniciar sesión"),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   void _togglePasswordVisibility() {
@@ -28,9 +110,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _authStateSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -56,7 +146,6 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Título
                   Text(
                     'Iniciar sesión',
                     style: TextStyle(
@@ -66,74 +155,55 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
-                  // Íconos sociales (solo desktop)
                   if (!isMobile)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.g_mobiledata, size: 40, color: Colors.red),
-                          onPressed: () {
-                            // TODO: Conectar a la lógica de Google Auth
-                          },
+                          icon: const Icon(Icons.g_mobiledata,
+                              size: 40, color: Colors.red),
+                          onPressed: () {},
                         ),
                       ],
                     ),
                   const SizedBox(height: 20),
-                  
-                  // Campo de email
                   CustomTextField(
                     controller: _emailController,
                     labelText: 'Correo electrónico',
                     prefixIcon: Icons.email,
                     keyboardType: TextInputType.emailAddress,
                     maxLength: 64,
-                    // validator: InputValidator.validateEmail,
                   ),
                   const SizedBox(height: 15),
-                  
-                  // Campo de contraseña
                   CustomTextField(
                     controller: _passwordController,
                     labelText: 'Contraseña',
                     prefixIcon: Icons.lock,
                     obscureText: !_passwordVisible,
                     suffixIcon: IconButton(
-                      icon: Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off),
+                      icon: Icon(_passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off),
                       onPressed: _togglePasswordVisibility,
                     ),
                     maxLength: 40,
-                    // validator: InputValidator.validatePassword,
                   ),
                   const SizedBox(height: 10),
-                  
-                  // Olvidé contraseña
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Conectar a la lógica de restablecer contraseña
-                      },
+                      onPressed: () {},
                       child: const Text('¿Olvidaste tu contraseña?'),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
-                  // Botón de ingreso
                   SizedBox(
                     width: isMobile ? double.infinity : null,
                     child: ElevatedButton(
-                      onPressed: _loading
-                          ? null
-                          : () {
-                              setState(() {
-                                _loading = !_loading;
-                              });
-                              // TODO: Conectar a la lógica de inicio de sesión
-                            },
+                      onPressed: _loading ? null : _login,
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30.0),
                         ),
@@ -145,8 +215,6 @@ class _LoginPageState extends State<LoginPage> {
                           : const Text('Ingresar'),
                     ),
                   ),
-                  
-                  // Sección social para móviles
                   if (isMobile)
                     Column(
                       children: [
@@ -154,10 +222,9 @@ class _LoginPageState extends State<LoginPage> {
                         const Text('O inicia sesión con'),
                         const SizedBox(height: 10),
                         IconButton(
-                          icon: const Icon(Icons.g_mobiledata, size: 40, color: Colors.red),
-                          onPressed: () {
-                            // TODO: Conectar a la lógica de Google Auth
-                          },
+                          icon: const Icon(Icons.g_mobiledata,
+                              size: 40, color: Colors.red),
+                          onPressed: () {},
                         ),
                       ],
                     ),
