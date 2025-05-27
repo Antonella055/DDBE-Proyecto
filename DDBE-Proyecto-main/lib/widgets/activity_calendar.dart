@@ -22,7 +22,6 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
   // Mapa para guardar actividades por fecha
   Map<DateTime, List<String>> _activities = {};
 
-  // ...existing code...
   @override
   Widget build(BuildContext context) {
     return Stack(

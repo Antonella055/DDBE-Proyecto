@@ -4,7 +4,6 @@ import 'package:ayudantia_software/widgets/custom_appbar.dart';
 import 'package:ayudantia_software/widgets/custom_footer.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
 import 'package:ayudantia_software/widgets/accesibility_drawer.dart';
-import 'package:ayudantia_software/widgets/activity_calendar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,14 +23,17 @@ class _HomeScreenState extends State<HomeScreen> {
   final SupabaseService _supabaseService = SupabaseService();
 
   TextStyle get _textStyle => TextStyle(
-        fontSize: _fontSize,
-        fontFamily: _readableFont ? 'Arial' : 'Roboto',
-        color: _darkMode ? Colors.white : Colors.black,
-        decoration: _underlineLinks ? TextDecoration.underline : TextDecoration.none,
-      );
+    fontSize: _fontSize,
+    fontFamily: _readableFont ? 'Arial' : 'Roboto',
+    color: _darkMode ? Colors.white : Colors.black,
+    decoration:
+        _underlineLinks ? TextDecoration.underline : TextDecoration.none,
+  );
 
-  Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
-  Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
+  Color get _backgroundColor =>
+      _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
+  Color get _appBarColor =>
+      _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
   Color get _linkTextColor => _highContrast ? Colors.black : Colors.white;
 
   @override
@@ -50,18 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                // inicio del calendario
-               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-                child: ActivityCalendar(
-                  textColor: _darkMode ? Colors.white : Colors.black,
-                  backgroundColor: _darkMode ? Colors.grey[800]! : Colors.white,
-                ),
-              ),
-                // fin del calendario
               // Sección principal con márgenes aumentados
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 32.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -81,8 +77,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: IconButton(
-                                  icon: const Icon(Icons.accessibility_new, color: Colors.white, size: 30),
-                                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                                  icon: const Icon(
+                                    Icons.accessibility_new,
+                                    color: Colors.white,
+                                    size: 30,
+                                  ),
+                                  onPressed:
+                                      () =>
+                                          _scaffoldKey.currentState
+                                              ?.openEndDrawer(),
                                 ),
                               ),
                             ),
@@ -114,13 +117,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen1.jpg'),
+                          _supabaseService.getPublicImageUrl(
+                            'images',
+                            'upload/imagen1.jpg',
+                          ),
                           fit: BoxFit.cover,
                           height: 200,
-                          errorBuilder: (context, error, stackTrace) => Text(
-                            'Error al cargar imagen1.jpg',
-                            style: _textStyle.copyWith(color: Colors.red),
-                          ),
+                          errorBuilder:
+                              (context, error, stackTrace) => Text(
+                                'Error al cargar imagen1.jpg',
+                                style: _textStyle.copyWith(color: Colors.red),
+                              ),
                         ),
                       ),
                     ),
@@ -130,7 +137,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Sección de "Dependencia adscrita"
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 32.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -139,12 +149,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen2.jpg'),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Text(
-                            'Error al cargar imagen2.jpg',
-                            style: _textStyle.copyWith(color: Colors.red),
+                          _supabaseService.getPublicImageUrl(
+                            'images',
+                            'upload/imagen2.jpg',
                           ),
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) => Text(
+                                'Error al cargar imagen2.jpg',
+                                style: _textStyle.copyWith(color: Colors.red),
+                              ),
                         ),
                       ),
                     ),
@@ -154,20 +168,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Dependencia adscrita al Decanato de Estudiantes'),
+                          _buildSectionTitle(
+                            'Dependencia adscrita al Decanato de Estudiantes',
+                          ),
                           const SizedBox(height: 16),
                           _buildParagraph(
-                              'La Dirección de Desarrollo y Bienestar Estudiantil (DDBE) tiene como función principal '
-                              'dirigir, planificar, controlar y evaluar los programas orientados a la atención integral '
-                              'de la población estudiantil en los aspectos de crecimiento, desarrollo personal y '
-                              'asesoramiento psicológico, garantizando la adecuada proyección de los recursos '
-                              'necesarios para el logro de los objetivos estratégicos del año de Rectoría de la '
-                              'Universidad acordes con los indicadores de bienestar y retención estudiantil previstos '
-                              'por la institución y siguiendo los lineamientos del Decanato de Estudiantes.'),
+                            'La Dirección de Desarrollo y Bienestar Estudiantil (DDBE) tiene como función principal '
+                            'dirigir, planificar, controlar y evaluar los programas orientados a la atención integral '
+                            'de la población estudiantil en los aspectos de crecimiento, desarrollo personal y '
+                            'asesoramiento psicológico, garantizando la adecuada proyección de los recursos '
+                            'necesarios para el logro de los objetivos estratégicos del año de Rectoría de la '
+                            'Universidad acordes con los indicadores de bienestar y retención estudiantil previstos '
+                            'por la institución y siguiendo los lineamientos del Decanato de Estudiantes.',
+                          ),
                           const SizedBox(height: 16),
                           _buildParagraph(
-                              'Asimismo, cuenta con la Gerencia de Asesoramiento y Desarrollo Estudiantil, y la '
-                              'Gerencia de Atención Socioeconómica Estudiantil.'),
+                            'Asimismo, cuenta con la Gerencia de Asesoramiento y Desarrollo Estudiantil, y la '
+                            'Gerencia de Atención Socioeconómica Estudiantil.',
+                          ),
                         ],
                       ),
                     ),
@@ -177,7 +195,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
               CustomFooter(
                 textColor: _darkMode ? Colors.white : Colors.black,
-                backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                backgroundColor:
+                    _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
               ),
             ],
           ),
@@ -193,15 +212,17 @@ class _HomeScreenState extends State<HomeScreen> {
         onFontSizeChanged: (newSize) => setState(() => _fontSize = newSize),
         onHighContrastChanged: (value) => setState(() => _highContrast = value),
         onDarkModeChanged: (value) => setState(() => _darkMode = value),
-        onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
+        onUnderlineLinksChanged:
+            (value) => setState(() => _underlineLinks = value),
         onReadableFontChanged: (value) => setState(() => _readableFont = value),
-        onReset: () => setState(() {
-          _fontSize = 16.0;
-          _highContrast = false;
-          _darkMode = false;
-          _underlineLinks = false;
-          _readableFont = true;
-        }),
+        onReset:
+            () => setState(() {
+              _fontSize = 16.0;
+              _highContrast = false;
+              _darkMode = false;
+              _underlineLinks = false;
+              _readableFont = true;
+            }),
         appBarColor: _appBarColor,
         linkTextColor: _linkTextColor,
       ),
