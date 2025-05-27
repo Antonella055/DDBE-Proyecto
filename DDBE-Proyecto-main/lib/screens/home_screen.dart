@@ -4,6 +4,7 @@ import 'package:ayudantia_software/widgets/custom_appbar.dart';
 import 'package:ayudantia_software/widgets/custom_footer.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
 import 'package:ayudantia_software/widgets/accesibility_drawer.dart';
+import 'package:ayudantia_software/widgets/activity_calendar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,6 +50,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+                // inicio del calendario
+               Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+                child: ActivityCalendar(
+                  textColor: _darkMode ? Colors.white : Colors.black,
+                  backgroundColor: _darkMode ? Colors.grey[800]! : Colors.white,
+                ),
+              ),
+                // fin del calendario
               // Sección principal con márgenes aumentados
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
