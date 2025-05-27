@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
 
-// NO SE INCLUYEN DEPENDENCIAS EXTERNAS NI ESPECÍFICAS DE TU PROYECTO
-// como 'package:provider', 'package:supabase_flutter', 'package:intl',
-// o tus modelos y servicios personalizados.
-// ESTE CÓDIGO ES SOLO PARA VISUALIZAR LA INTERFAZ.
 
-// --- INICIO DE MODELO ESQUELETO (SOLO PARA COMPILAR LA UI) ---
-// Normalmente, este modelo estaría en un archivo separado (profile_model.dart)
-// y tendría una lógica más compleja con ChangeNotifier.
 class ProfileModel {
   final formKey = GlobalKey<FormState>();
 
-  // Controladores y variables de estado (solo inicializados para evitar errores de compilación)
+ 
   final TextEditingController fullNameController = TextEditingController(text: 'John Doe');
   final TextEditingController carnetController = TextEditingController(text: '202012345');
   final TextEditingController avatarUrlController = TextEditingController(text: 'https://cdn.icon-icons.com/icons2/1378/PNG/512/avatar_100994.png');
