@@ -1,11 +1,11 @@
-// lib/main.dart
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as developer; // Importar para usar developer.log
 
-// Importa las páginas de Antonella
+
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart'; // Podría ser la página post-login si es admin/profesor
 
