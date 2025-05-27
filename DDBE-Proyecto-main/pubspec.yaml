@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   supabase_flutter: ^2.9.0
   image_picker: ^1.1.0
+  table_calendar: ^3.0.9
 
 dev_dependencies:
   flutter_test:
