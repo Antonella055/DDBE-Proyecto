@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:ayudantia_software/services/supabase_service.dart';
 
 class ActivityCalendar extends StatefulWidget {
   final Color textColor;
@@ -16,11 +17,30 @@ class ActivityCalendar extends StatefulWidget {
 }
 
 class _ActivityCalendarState extends State<ActivityCalendar> {
+  final SupabaseService _supabaseService = SupabaseService();
+
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-
-  // Mapa para guardar actividades por fecha
   Map<DateTime, List<String>> _activities = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActivities();
+  }
+
+  Future<void> _loadActivities() async {
+    final data = await _supabaseService.getCalendario();
+    setState(() {
+      _activities.clear();
+      for (var item in data) {
+        final date = DateTime.parse(item['dia']);
+        final key = DateTime(date.year, date.month, date.day);
+        _activities.putIfAbsent(key, () => []);
+        _activities[key]!.add(item['evento']);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +53,7 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
             children: [
               TableCalendar(
                 firstDay: DateTime.utc(2020, 1, 1),
-                lastDay: DateTime.utc(2030, 12, 31),
+                lastDay: DateTime.utc(2050, 12, 31),
                 focusedDay: _focusedDay,
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 onDaySelected: (selectedDay, focusedDay) {
@@ -42,6 +62,10 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
                     _focusedDay = focusedDay;
                   });
                 },
+                eventLoader:
+                    (day) =>
+                        _activities[DateTime(day.year, day.month, day.day)] ??
+                        [],
                 calendarStyle: CalendarStyle(
                   todayDecoration: BoxDecoration(
                     color: widget.textColor.withOpacity(0.2),
@@ -71,10 +95,6 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
                     color: widget.textColor,
                   ),
                 ),
-                eventLoader:
-                    (day) =>
-                        _activities[DateTime(day.year, day.month, day.day)] ??
-                        [],
               ),
               const SizedBox(height: 16),
               if (_selectedDay != null)
@@ -127,15 +147,13 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
                     ),
               );
               if (result != null && result.trim().isNotEmpty) {
-                setState(() {
-                  final dayKey = DateTime(
-                    _selectedDay!.year,
-                    _selectedDay!.month,
-                    _selectedDay!.day,
-                  );
-                  _activities.putIfAbsent(dayKey, () => []);
-                  _activities[dayKey]!.add(result.trim());
-                });
+                final dayKey = DateTime(
+                  _selectedDay!.year,
+                  _selectedDay!.month,
+                  _selectedDay!.day,
+                );
+                await _supabaseService.addActivity(dayKey, result.trim());
+                await _loadActivities();
               }
             },
           ),

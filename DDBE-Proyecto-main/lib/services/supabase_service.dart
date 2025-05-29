@@ -13,20 +13,32 @@ class SupabaseService {
   ///         Se recomienda usar un UUID o timestamp para el nombre del archivo.
   ///
   /// Retorna la URL pública de la imagen si la subida es exitosa, de lo contrario, null.
-  Future<String?> uploadImage(File imageFile, String bucketName, String path) async {
+  Future<String?> uploadImage(
+    File imageFile,
+    String bucketName,
+    String path,
+  ) async {
     try {
-      final String fileName = imageFile.path.split('/').last; // Obtiene el nombre del archivo original
-      final String filePathInBucket = '$path/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final String fileName =
+          imageFile.path
+              .split('/')
+              .last; // Obtiene el nombre del archivo original
+      final String filePathInBucket =
+          '$path/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
       // Sube el archivo al bucket especificado
-      await _supabase.storage.from(bucketName).upload(
-        filePathInBucket,
-        imageFile,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-      );
+      await _supabase.storage
+          .from(bucketName)
+          .upload(
+            filePathInBucket,
+            imageFile,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          );
 
       // Obtiene la URL pública del archivo subido
-      final String publicUrl = _supabase.storage.from(bucketName).getPublicUrl(filePathInBucket);
+      final String publicUrl = _supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePathInBucket);
       return publicUrl;
     } on StorageException catch (e) {
       print('Error al subir imagen a Supabase Storage: ${e.message}');
@@ -45,10 +57,49 @@ class SupabaseService {
     return _supabase.storage.from(bucketName).getPublicUrl(path);
   }
 
+  /// calendario
+  Future<List<Map<String, dynamic>>> getCalendario() async {
+    final response = await _supabase
+        .from('calendario')
+        .select()
+        .order('dia', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> addActivity(DateTime date, String description) async {
+    await _supabase.from('calendario').insert({
+      'dia': date.toIso8601String().split('T')[0], // yyyy-MM-dd
+      'evento': description,
+    });
+  }
+
+  /// final del calendario
+  /// inicio del dashboard
+  Future<void> registrarHorasCulminadas(DateTime fecha, int horas) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Usuario no autenticado');
+    await _supabase.from('horas_culminadas').insert({
+      'id': userId,
+      'fecha': fecha.toIso8601String().split('T')[0],
+      'horas': horas,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> obtenerHorasUsuarioActual() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Usuario no autenticado');
+    final response = await _supabase
+        .from('horas_culminadas')
+        .select()
+        .eq('id', userId)
+        .order('fecha', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   // TODO: Puedes añadir más métodos para interactuar con otras tablas (noticias, eventos, etc.)
   // Ejemplo:
   // Future<List<Map<String, dynamic>>> fetchNews() async {
   //   final response = await _supabase.from('news').select().order('created_at', ascending: false);
   //   return response;
-  // }
+  //
 }
