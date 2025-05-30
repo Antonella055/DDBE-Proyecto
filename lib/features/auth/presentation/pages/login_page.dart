@@ -105,9 +105,8 @@ class _LoginPageState extends State<LoginPage> {
             print('DEBUG: Profile not found, attempting to create new profile.');
             final UserProfileModel newProfile = UserProfileModel(
               id: user.id,
-              email: user.email!, // Asegúrate de que el email no sea nulo aquí
+              email: user.email!, 
             );
-            // Usar el AuthRemoteDataSource para crear el perfil en la BD
             await _authDataSource.createUserProfile(newProfile);
             if (mounted) {
               context.showSnackBar('Perfil creado exitosamente al iniciar sesión.');
