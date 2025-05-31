@@ -42,7 +42,7 @@ class UserProfileModel {
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
     return UserProfileModel(
       id: json['ID'], 
-      email: json['correo'],
+      email: json['email'],
       fullName: json['full_name'],
       birthDate: json['birth_date'] != null ? DateTime.parse(json['birth_date']) : null,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
