@@ -71,8 +71,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       @override
       Future<void> updateFullUserProfile(UserProfileModel userProfile) async {
         try{
-
-
         await supabaseClient
           .from('profiles')
           .update(userProfile.toJsonFull()).eq('ID',userProfile.id);

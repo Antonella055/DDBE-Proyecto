@@ -29,7 +29,7 @@ class UserProfileModel {
   Map<String, dynamic> toJsonFull() {
     return {
       'ID': id, 
-      'correo': email,
+      'email': email,
       if (fullName != null) 'full_name': fullName,
       if (birthDate != null) 'birth_date': birthDate!.toIso8601String(),
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
