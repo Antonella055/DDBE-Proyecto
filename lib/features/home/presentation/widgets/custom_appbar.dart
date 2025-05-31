@@ -59,7 +59,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   children: [
                     _buildAppBarMenuItem(context, 'DDBE', Colors.orange, route: '/home'), // Ejemplo de ruta
                     _buildAppBarMenuItem(context, 'Noticias', Colors.black87, route: '/news'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Cronograma', Colors.black87, route: '/schedule'), // Ejemplo de ruta
+                    _buildAppBarMenuItem(context, 'Cronograma', Colors.black87, route: '/calendar'), // Ejemplo de ruta
                     _buildAppBarMenuItem(context, 'Postúlate', Colors.black87, route: '/apply'), // Ejemplo de ruta
                     _buildAppBarMenuItem(context, 'Contacto', Colors.black87, route: '/contact'), // ¡Aquí está la navegación a Contacto!
                     _buildAppBarMenuItem(context, 'Más', Colors.black87, hasDropdown: true, route: '/more'), // Ejemplo de ruta

@@ -16,7 +16,11 @@ import 'package:ayudantia_software/features/home/presentation/pages/home_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/news_screen.dart'; // Importa la pantalla de noticias
 
 //import 'package:ayudantia_software/features/home/presentation/pages/schedule_screen.dart'; // Importa la pantalla de cronograma
-import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart'; // Importa la pantalla de contacto
+import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
+ // Importa la pantalla de contacto
+
+import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
+
 
 // Variable global de Supabase
 final supabase = Supabase.instance.client;
@@ -99,7 +103,8 @@ class _MyAppState extends State<MyApp> {
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfilePage(),
         '/news': (context) => const NewsScreen(), // NEW: Añade la ruta para NewsScreen
-        // '/schedule': (context) => const ScheduleScreen(), // Ruta de ScheduleScreen comentada
+        '/calendar': (context) => const CalendarScreen(), // NEW: Añade la ruta para NewsScreen
+       // '/schedule': (context) => const ScheduleScreen(), // Ruta de ScheduleScreen comentada
         '/contact': (context) => const ContactScreen(), // Añade la ruta para ContactScreen
         // Añade otras rutas para admin, profesor, etc. si las tienes
       },
