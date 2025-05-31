@@ -1,4 +1,3 @@
-// lib/main.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -6,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as developer; // Importar para usar developer.log
 
 // Importa las páginas de Antonella
+
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart'; // Podría ser la página post-login si es admin/profesor
 
@@ -25,9 +25,11 @@ import 'package:ayudantia_software/features/home/presentation/pages/calendar_scr
 // Variable global de Supabase
 final supabase = Supabase.instance.client;
 
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+¿
   // Cargar variables de entorno
   try {
     await dotenv.load();
@@ -37,15 +39,22 @@ Future<void> main() async {
   }
 
   // Inicialización de Supabase
+
   await Supabase.initialize(
     url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
   );
 
+  // REMOVE THIS LINE: setupDependencies();
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+// RE-ADD THE GLOBAL SUPABASE INSTANCE
+final supabase = Supabase.instance.client;
+
+class MyApp extends StatelessWidget {
+
   const MyApp({super.key});
 
   @override
@@ -93,6 +102,7 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
+
       // Lógica de navegación condicional basada en el estado de autenticación
       home: supabase.auth.currentSession == null
           ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
@@ -107,6 +117,7 @@ class _MyAppState extends State<MyApp> {
        // '/schedule': (context) => const ScheduleScreen(), // Ruta de ScheduleScreen comentada
         '/contact': (context) => const ContactScreen(), // Añade la ruta para ContactScreen
         // Añade otras rutas para admin, profesor, etc. si las tienes
+
       },
     );
   }
@@ -119,8 +130,8 @@ extension ContextExtension on BuildContext {
       SnackBar(
         content: Text(message),
         backgroundColor: isError
-            ? const Color.fromARGB(255, 211, 47, 47) // Rojo para errores
-            : const Color.fromARGB(255, 76, 175, 80), // Verde para éxito
+            ? const Color.fromARGB(255, 211, 47, 47)
+            : const Color.fromARGB(255, 76, 175, 80),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
