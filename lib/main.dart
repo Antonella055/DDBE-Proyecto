@@ -23,9 +23,9 @@ import 'package:ayudantia_software/features/home/presentation/pages/calendar_scr
 
 
 
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
 
   // Cargar variables de entorno
   try {
@@ -51,6 +51,8 @@ Future<void> main() async {
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatefulWidget {
+
+
 
   const MyApp({super.key});
 
