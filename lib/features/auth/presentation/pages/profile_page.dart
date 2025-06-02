@@ -1,10 +1,19 @@
+// lib/features/auth/presentation/pages/profile_page.dart
+
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ayudantia_software/main.dart'; 
+import 'package:ayudantia_software/main.dart';
 import 'package:ayudantia_software/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:ayudantia_software/features/auth/data/models/user_profile_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/student_profile_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/career_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/assistance_type_model.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
-import 'package:ayudantia_software/features/auth/presentation/widgets/custom_text_field.dart'; 
+import 'package:ayudantia_software/features/auth/presentation/widgets/custom_text_field.dart';
+import 'package:collection/collection.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -19,178 +28,284 @@ class _ProfilePageState extends State<ProfilePage> {
   final _genderController = TextEditingController();
   final _userTypeController = TextEditingController();
 
+  final _carnetController = TextEditingController();
+  final _admissionTrimesterController = TextEditingController();
+
   UserProfileModel? _userProfile;
+  StudentProfileModel? _studentProfile;
+
+  List<CareerModel> _careers = [];
+  List<AssistanceTypeModel> _assistanceTypes = [];
+
+  int? _selectedCareerId;
+  int? _selectedAssistanceTypeId;
+
   bool _isLoadingProfile = true;
-  bool _isSaving = false;
+  bool _isUpdatingProfile = false;
 
   late final AuthRemoteDataSource _authDataSource;
 
   @override
   void initState() {
     super.initState();
-    print('DEBUG_INIT: ProfilePage initState - Inicio de initState.');
-
-    if (supabase == null) {
-      print('ERROR_INIT: La instancia global de Supabase es NULL en ProfilePage initState.');
-      if (mounted) {
-        context.showSnackBar('Error: Supabase no inicializado correctamente.', isError: true);
-        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
-      }
-      return; 
-    }
 
     _authDataSource = AuthRemoteDataSourceImpl(supabase);
-    print('DEBUG_INIT: ProfilePage initState - AuthRemoteDataSourceImpl inicializado.');
-
-    print('DEBUG_INIT: ProfilePage initState - Llamando _loadUserProfile().');
     _loadUserProfile();
-    print('DEBUG_INIT: ProfilePage initState - Fin de initState.');
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _birthDateController.dispose();
+    _genderController.dispose();
+    _userTypeController.dispose();
+
+    _carnetController.dispose();
+    _admissionTrimesterController.dispose();
+
+    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {
-    print('DEBUG_LOAD: _loadUserProfile - ¡ENTRADA REAL A LA FUNCIÓN!');
     setState(() {
       _isLoadingProfile = true;
-      print('DEBUG_LOAD: _loadUserProfile - _isLoadingProfile establecido en true DENTRO DE SETSTATE.');
     });
 
-    print('DEBUG_LOAD: _loadUserProfile - Ejecución CONTINÚA después de setState (sin delay).'); 
-
     final User? currentUser = supabase.auth.currentUser;
-    print('DEBUG_LOAD: _loadUserProfile - currentUser: ${currentUser?.id ?? 'Nulo'}');
 
     if (currentUser == null) {
-      print('DEBUG_LOAD: _loadUserProfile - No hay usuario autenticado, redirigiendo a LoginPage.');
       if (mounted) {
-        context.showSnackBar('No hay usuario autenticado.', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay usuario autenticado.'),
+            backgroundColor: Colors.red,
+          ),
+        );
         Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const LoginPage()));
       }
       if (mounted) {
         setState(() {
           _isLoadingProfile = false;
-          print('DEBUG_LOAD: _loadUserProfile - _isLoadingProfile establecido en false. (Usuario Nulo)');
         });
       }
       return;
     }
 
     try {
-      print('DEBUG_LOAD: _loadUserProfile - Intentando obtener perfil de Supabase para ID: ${currentUser.id}'); // ESTE ES EL SIGUIENTE PRINT CLAVE
-      final UserProfileModel? profile =
-          await _authDataSource.getUserProfile(currentUser.id); 
+      _assistanceTypes = await _authDataSource.getAssistanceTypes();
+      _assistanceTypes.sort((a, b) => a.type.compareTo(b.type));
+      print('DEBUG: Fetched ${_assistanceTypes.length} assistance types.');
 
-      print('DEBUG_LOAD: _loadUserProfile - getUserProfile ha retornado.');
+      final UserProfileModel? generalProfile =
+          await _authDataSource.getUserProfile(currentUser.id);
 
       if (mounted) {
-        if (profile != null) {
-          _userProfile = profile;
+        if (generalProfile != null) {
+          _userProfile = generalProfile;
           _fullNameController.text = _userProfile?.fullName ?? '';
           _birthDateController.text = _userProfile?.birthDate != null
               ? _userProfile!.birthDate!.toIso8601String().split('T').first
               : '';
           _genderController.text = _userProfile?.gender ?? '';
           _userTypeController.text = _userProfile?.userType ?? '';
-          print('DEBUG_LOAD: _loadUserProfile - Perfil cargado y controladores actualizados.');
+
+          print('DEBUG: UserType: ${_userProfile?.userType}');
+
+          if (_userProfile?.userType == 'Student') {
+            final StudentProfileModel? studentProfile = await _authDataSource.getStudentProfile(currentUser.id);
+            if (mounted) {
+              if (studentProfile != null) {
+                _studentProfile = studentProfile;
+                _carnetController.text = _studentProfile?.carnet ?? '';
+                _selectedCareerId = _studentProfile?.careerId; 
+                _selectedAssistanceTypeId = _studentProfile?.assistanceTypeId;
+
+                int? usersFacultyId; 
+                if (_selectedCareerId != null) {
+                  final allCareersForLookup = await _authDataSource.getCareers(); 
+                  print('DEBUG: Fetched ${allCareersForLookup.length} total careers to find user\'s faculty.');
+                  final currentCareer = allCareersForLookup.firstWhereOrNull(
+                    (career) => career.careerId == _selectedCareerId,
+                  );
+                  usersFacultyId = currentCareer?.idFaculty; 
+                  print('DEBUG: Current career (${currentCareer?.name}) facultyId: $usersFacultyId');
+                }
+                
+                _careers = await _authDataSource.getCareers(facultyId: usersFacultyId);
+                _careers.sort((a, b) => a.name.compareTo(b.name));
+                print('DEBUG: Loaded ${_careers.length} careers (filtered by faculty ID: $usersFacultyId).');
+
+                _admissionTrimesterController.text = _studentProfile?.admissionTrimester != null
+                    ? _studentProfile!.admissionTrimester!.toIso8601String().split('T').first
+                    : '';
+              } else {
+                _studentProfile = StudentProfileModel(id: currentUser.id);
+                await _authDataSource.createStudentProfile(_studentProfile!);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Perfil de estudiante creado automáticamente.'), backgroundColor: Colors.orange),
+                  );
+                }
+                _selectedCareerId = null; 
+                _selectedAssistanceTypeId = null; 
+                _careers = await _authDataSource.getCareers(); 
+                _careers.sort((a, b) => a.name.compareTo(b.name));
+                print('DEBUG: New student. Loaded ${_careers.length} unfiltered careers.');
+              }
+            }
+          }
+          
         } else {
-          print('DEBUG_LOAD: _loadUserProfile - Perfil no encontrado, intentando crear uno básico.');
+          String initialUserType = 'Other';
+          if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
+            initialUserType = 'Student';
+          } else if (currentUser.email!.endsWith('@unimet.edu.ve')) {
+            initialUserType = 'Professor';
+          }
+
           _userProfile = UserProfileModel(
             id: currentUser.id,
             email: currentUser.email!,
+            userType: initialUserType,
           );
           try {
             await _authDataSource.createUserProfile(_userProfile!);
-            if (mounted) {
-              context.showSnackBar('Perfil creado automáticamente.');
+            
+            if (initialUserType == 'Student') {
+              await _authDataSource.createStudentProfile(StudentProfileModel(id: currentUser.id));
+              _selectedCareerId = null;
+              _selectedAssistanceTypeId = null;
+              _careers = await _authDataSource.getCareers(); 
+              _careers.sort((a, b) => a.name.compareTo(b.name));
+              print('DEBUG: New student profile created. Loaded ${_careers.length} unfiltered careers.');
             }
-            print('DEBUG_LOAD: _loadUserProfile - Perfil básico creado exitosamente.');
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Perfil general y de usuario específico creados automáticamente.'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+            _loadUserProfile(); 
+            return;
           } catch (e) {
             if (mounted) {
-              context.showSnackBar('Error al crear perfil automáticamente: $e', isError: true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error al crear perfil automáticamente: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
-            print('ERROR_LOAD: _loadUserProfile - Fallo en la creación automática de perfil: $e');
           }
         }
       }
     } catch (e) {
       if (mounted) {
-        context.showSnackBar('Error al cargar el perfil: $e', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar el perfil: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-      print('ERROR_LOAD: _loadUserProfile - Fallo en la carga del perfil (catch principal): $e');
+      print('ERROR: Exception in _loadUserProfile: $e'); 
     } finally {
       if (mounted) {
         setState(() {
           _isLoadingProfile = false;
-          print('DEBUG_LOAD: _loadUserProfile - _isLoadingProfile establecido en false. FIN.');
         });
       }
     }
   }
 
-  Future<void> _updateProfile() async {
+  Future<void> _updateUserProfile() async {
     setState(() {
-      _isSaving = true;
+      _isUpdatingProfile = true;
     });
 
     final User? currentUser = supabase.auth.currentUser;
     if (currentUser == null || _userProfile == null) {
       if (mounted) {
-        context.showSnackBar('No hay usuario para actualizar.', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay usuario para actualizar.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
       setState(() {
-        _isSaving = false;
+        _isUpdatingProfile = false;
       });
       return;
     }
 
-    final updatedProfile = UserProfileModel(
-      id: _userProfile!.id,
-      email: _userProfile!.email,
-      fullName: _fullNameController.text.trim().isNotEmpty
-          ? _fullNameController.text.trim()
-          : null,
-      birthDate: _birthDateController.text.trim().isNotEmpty
-          ? DateTime.tryParse(_birthDateController.text.trim())
-          : null,
-      gender: _genderController.text.trim().isNotEmpty
-          ? _genderController.text.trim()
-          : null,
-      userType: _userTypeController.text.trim().isNotEmpty
-          ? _userTypeController.text.trim()
-          : null,
-    );
-
     try {
-      await _authDataSource.updateFullUserProfile(updatedProfile);
+      final updatedGeneralProfile = UserProfileModel(
+        id: _userProfile!.id,
+        email: _userProfile!.email,
+        fullName: _fullNameController.text.trim().isNotEmpty ? _fullNameController.text.trim() : null,
+        birthDate: _birthDateController.text.trim().isNotEmpty ? DateTime.tryParse(_birthDateController.text.trim()) : null,
+        gender: _genderController.text.trim().isNotEmpty ? _genderController.text.trim() : null,
+        userType: _userProfile!.userType,
+      );
+      await _authDataSource.updateUserProfile(updatedGeneralProfile);
+
+      if (_userProfile?.userType == 'Student' && _studentProfile != null) {
+        final updatedStudentProfile = StudentProfileModel(
+          id: _userProfile!.id,
+          carnet: _carnetController.text.trim().isNotEmpty ? _carnetController.text.trim() : null,
+          careerId: _selectedCareerId, 
+          assistanceTypeId: _selectedAssistanceTypeId,
+          admissionTrimester: _admissionTrimesterController.text.trim().isNotEmpty ? DateTime.tryParse(_admissionTrimesterController.text.trim()) : null,
+          avatarUrl: _studentProfile?.avatarUrl,
+        );
+        await _authDataSource.updateStudentProfile(updatedStudentProfile);
+      }
+
       if (mounted) {
-        context.showSnackBar('Perfil actualizado exitosamente!');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Perfil actualizado exitosamente!'),
+            backgroundColor: Colors.green,
+          ),
+        );
         _loadUserProfile(); 
       }
     } catch (e) {
       if (mounted) {
-        context.showSnackBar('Error al actualizar el perfil: $e', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar el perfil: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
+      print('ERROR: Exception in _updateUserProfile: $e'); 
     } finally {
       if (mounted) {
         setState(() {
-          _isSaving = false;
+          _isUpdatingProfile = false;
         });
       }
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _birthDateController.text.isNotEmpty
-          ? DateTime.tryParse(_birthDateController.text) ?? DateTime.now()
+      initialDate: controller.text.isNotEmpty
+          ? DateTime.tryParse(controller.text) ?? DateTime.now()
           : DateTime.now(),
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
     if (picked != null) {
       setState(() {
-        _birthDateController.text = picked.toIso8601String().split('T').first;
+        controller.text = picked.toIso8601String().split('T').first;
       });
     }
   }
@@ -206,26 +321,80 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } on AuthException catch (error) {
       if (mounted) {
-        context.showSnackBar(error.message, isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        context.showSnackBar('Error al cerrar sesión: $e', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cerrar sesión: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
 
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _birthDateController.dispose();
-    _genderController.dispose();
-    _userTypeController.dispose();
-    super.dispose();
+  Future<void> _uploadAvatar() async {
+  final ImagePicker picker = ImagePicker();
+  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+  if (image != null) {
+    try {
+      final String fileExt = path.extension(image.path);
+      final String fileName = '${_userProfile!.id}$fileExt';
+      // CAMBIO AQUÍ: Añadir 'news/' al path
+      final String imagePathInBucket = 'news/$fileName'; 
+
+      final Uint8List fileBytes = await image.readAsBytes();
+
+      await supabase.storage.from('avatars').uploadBinary(
+            imagePathInBucket,
+            fileBytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      final String publicUrl = supabase.storage
+          .from('avatars')
+          .getPublicUrl(imagePathInBucket);
+
+      if (_userProfile?.userType == 'Student' && _studentProfile != null) {
+        _studentProfile = _studentProfile!.copyWith(avatarUrl: publicUrl);
+        await _authDataSource.updateStudentProfile(_studentProfile!);
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Avatar actualizado exitosamente!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir el avatar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('ERROR: Exception in _uploadAvatar: $e');
+    }
   }
+}
 
   @override
   Widget build(BuildContext context) {
+    final String? currentUserType = _userProfile?.userType;
+    final bool isStudent = currentUserType == 'Student';
+
     if (_isLoadingProfile) {
       return Scaffold(
         appBar: AppBar(title: const Text('Mi Perfil')),
@@ -248,6 +417,29 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (isStudent) ...[
+              Center(
+                child: GestureDetector(
+                  onTap: _uploadAvatar,
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                    backgroundImage: (_studentProfile?.avatarUrl != null && _studentProfile!.avatarUrl!.isNotEmpty)
+                        ? NetworkImage(_studentProfile!.avatarUrl!) as ImageProvider<Object>?
+                        : null,
+                    child: (_studentProfile?.avatarUrl == null || _studentProfile!.avatarUrl!.isEmpty)
+                        ? Icon(
+                            Icons.camera_alt,
+                            size: 50,
+                            color: Theme.of(context).primaryColor,
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
             Text(
               'Correo Electrónico:',
               style: Theme.of(context).textTheme.titleSmall,
@@ -257,7 +449,7 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: TextEditingController(text: _userProfile?.email ?? 'N/A'),
               labelText: 'Email',
               prefixIcon: Icons.email,
-              enabled: false, 
+              enabled: false,
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
@@ -284,12 +476,11 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: _birthDateController,
               labelText: 'Fecha de Nacimiento (YYYY-MM-DD)',
               prefixIcon: Icons.calendar_today,
-              readOnly: true, 
-              onTap: () => _selectDate(context), 
+              readOnly: true,
+              onTap: () => _selectDate(context, _birthDateController),
             ),
             const SizedBox(height: 20),
-
-         
+            
             Text(
               'Género:',
               style: Theme.of(context).textTheme.titleSmall,
@@ -302,7 +493,6 @@ class _ProfilePageState extends State<ProfilePage> {
               maxLength: 50,
             ),
             const SizedBox(height: 20),
-
             
             Text(
               'Tipo de Usuario:',
@@ -318,11 +508,118 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 30),
 
+            if (isStudent) ...[
+              const Text(
+                'Información de Estudiante',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              CustomTextField(
+                controller: _carnetController,
+                labelText: 'Carnet',
+                prefixIcon: Icons.card_membership,
+                keyboardType: TextInputType.text,
+                maxLength: 20,
+              ),
+              const SizedBox(height: 15),
+
+              DropdownButtonFormField<int>(
+                decoration: InputDecoration(
+                  labelText: 'Carrera',
+                  prefixIcon: const Icon(Icons.school),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 1.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
+                  ),
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  filled: true,
+                ),
+                value: _selectedCareerId,
+                hint: const Text('Selecciona una carrera'),
+                items: _careers.map((career) {
+                  return DropdownMenuItem<int>(
+                    value: career.careerId,
+                    child: Text(career.name),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedCareerId = newValue;
+                  });
+                  print('DEBUG: Selected Career ID: $_selectedCareerId');
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona una carrera';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+
+              DropdownButtonFormField<int>(
+                decoration: InputDecoration(
+                  labelText: 'Tipo de Asistencia',
+                  prefixIcon: const Icon(Icons.help_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 1.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
+                  ),
+                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                  filled: true,
+                ),
+                value: _selectedAssistanceTypeId,
+                hint: const Text('Selecciona un tipo de asistencia'),
+                items: _assistanceTypes.map((type) {
+                  return DropdownMenuItem<int>(
+                    value: type.assistanceTypeId,
+                    child: Text(type.type),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedAssistanceTypeId = newValue;
+                  });
+                  print('DEBUG: Selected Assistance Type ID: $_selectedAssistanceTypeId');
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona un tipo de asistencia';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+
+              CustomTextField(
+                controller: _admissionTrimesterController,
+                labelText: 'Trimestre de Admisión (YYYY-MM-DD)',
+                prefixIcon: Icons.date_range,
+                keyboardType: TextInputType.datetime,
+                readOnly: true,
+                onTap: () => _selectDate(context, _admissionTrimesterController),
+              ),
+              const SizedBox(height: 20),
+            ],
             
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isSaving ? null : _updateProfile,
+                onPressed: _isUpdatingProfile ? null : _updateUserProfile,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
@@ -331,7 +628,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: _isSaving
+                child: _isUpdatingProfile
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Actualizar Perfil'),
               ),

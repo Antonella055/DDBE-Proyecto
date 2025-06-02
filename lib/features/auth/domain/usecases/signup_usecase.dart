@@ -1,31 +1,32 @@
-import '../entities/user_entity.dart';
-import '../repositories/auth_repository.dart';
+import 'package:ayudantia_software/features/auth/domain/repositories/auth_repository.dart';
 
 class SignUpUseCase {
   final AuthRepository repository;
 
   SignUpUseCase(this.repository);
 
-  Future<UserEntity> call({ 
+  
+  Future<void> call({
     required String email,
     required String password,
     String? fullName,
     DateTime? birthDate,
     String? gender,
-    String? userType,
+    required String userType, 
   }) async {
     try {
-      final user = await repository.signUp(
-        email: email,
-        password: password,
+      
+      await repository.signUpWithEmailAndPassword(
+        email,
+        password,
+        userType, 
         fullName: fullName,
         birthDate: birthDate,
         gender: gender,
-        userType: userType,
       );
-      return user; 
-    } on Exception {
-      rethrow; 
+      
+    } on Exception { 
+      rethrow;
     }
   }
 }
