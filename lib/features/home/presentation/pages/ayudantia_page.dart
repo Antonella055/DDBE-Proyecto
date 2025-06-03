@@ -1,25 +1,69 @@
+// lib/features/postulacion/presentation/pages/ayudantia_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
+import 'package:ayudantia_software/main.dart'; // Import your global supabase instance
 import 'package:ayudantia_software/features/home/presentation/widgets/custom_appbar.dart';
+import 'package:ayudantia_software/services/supabase_service.dart'; // Import your SupabaseService
 
-class AyudantiaPage extends StatelessWidget {
+class AyudantiaPage extends StatefulWidget {
   const AyudantiaPage({super.key});
 
+  @override
+  State<AyudantiaPage> createState() => _AyudantiaPageState();
+}
+
+class _AyudantiaPageState extends State<AyudantiaPage> {
+  final SupabaseService _supabaseService = SupabaseService();
+  final SupabaseClient _supabaseClient =
+      supabase; // Get the client from main.dart
+  final _scaffoldKey = GlobalKey<ScaffoldState>(); // Key for CustomAppBar
+
   void _abrirPDF() async {
-    final Uri url = Uri.parse('https://tu-servidor.com/ayudantia.pdf');
+    // Construct the URL for the PDF in Supabase Storage
+    final String pdfUrl = _supabaseService.getPublicImageUrl(
+      'documents', // Your Supabase bucket name for documents
+      'REGLAMENTO-DEL-PROGRAMA-AYUDANTIA-UNIMET-2023 (1).pdf', // The exact path to your PDF file
+    );
+
+    final Uri url = Uri.parse(pdfUrl);
+    print('Attempting to launch PDF URL: $pdfUrl'); // Debugging print
+
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
-      throw 'No se pudo abrir el PDF';
+      // It's good practice to show an error to the user.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir el PDF: $pdfUrl')),
+      );
+    }
+  }
+
+  // Method to handle profile icon press (needed for CustomAppBar)
+  void _onProfileIconPressed() {
+    if (_supabaseClient.auth.currentUser == null) {
+      Navigator.of(context).pushNamed('/login');
+    } else {
+      Navigator.of(context).pushNamed('/profile');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Get the image URL for debugging purposes
+    final String imageUrl = _supabaseService.getPublicImageUrl(
+      'images', // Your bucket name for images
+      'upload/imagen4.png', // The path within the images bucket
+    );
+    print('Generated Image URL: $imageUrl'); // Print the image URL to console
+
     return Scaffold(
+      key: _scaffoldKey, // Assign the scaffold key
       appBar: CustomAppBar(
-        scaffoldKey: GlobalKey<ScaffoldState>(),
-        linkTextColor: Colors.white,
+        scaffoldKey: _scaffoldKey, // Pass the scaffold key
+        linkTextColor: Colors.white, // Or your preferred color
+        onProfileIconPressed: _onProfileIconPressed, // Pass the callback
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -72,7 +116,14 @@ class AyudantiaPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      // Puedes navegar a otra vista si hace falta
+                      // Implement your navigation logic here,
+                      // e.g., Navigator.of(context).pushNamed('/postular');
+                      // For now, it just shows a snackbar.
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Botón "Conocer más" presionado.'),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[200],
@@ -93,14 +144,50 @@ class AyudantiaPage extends StatelessWidget {
               flex: 1,
               child: Column(
                 children: [
-                  Image.asset(
-                    'assets/images/pdf_captura.jpg',
+                  // --- Supabase Image Call ---
+                  Image.network(
+                    imageUrl, // Use the generated image URL
                     height: 300,
                     fit: BoxFit.contain,
+                    // Optional: Add errorBuilder for better debugging
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 300,
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: Text(
+                            'Error al cargar la imagen: image4.png\nHTTP request failed, statusCode: 400, URL: $imageUrl\nError: $error',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      );
+                    },
+                    // Optional: Add loadingBuilder for visual feedback
+                    loadingBuilder: (
+                      BuildContext context,
+                      Widget child,
+                      ImageChunkEvent? loadingProgress,
+                    ) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: 300,
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value:
+                                loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: _abrirPDF,
+                    onTap: _abrirPDF, // This will now open your Supabase PDF
                     child: const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
