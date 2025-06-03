@@ -1,10 +1,10 @@
 import 'dart:async';
-
-import 'package:ayudantia_software/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart';
 import '/features/auth/presentation/widgets/custom_text_field.dart';
+import 'package:ayudantia_software/main.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,8 +21,12 @@ class _LoginPageState extends State<LoginPage> {
   bool _redirecting = false;
   late final StreamSubscription<AuthState> _authStateSubscription;
 
+
   @override
   void initState() {
+    super.initState();
+    
+
     _authStateSubscription = supabase.auth.onAuthStateChange.listen(
       (data) {
         if (_redirecting) return;
@@ -39,28 +43,18 @@ class _LoginPageState extends State<LoginPage> {
       onError: (error) {
         if (!mounted) return;
         if (error is AuthException) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.message), backgroundColor: Colors.red),
-          );
+          context.showSnackBar(error.message, isError: true);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Unexpected error occurred'),
-              backgroundColor: Colors.red),
-          );
+          context.showSnackBar('Ocurrió un error inesperado', isError: true);
         }
       },
     );
-    super.initState();
   }
 
   Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Por favor, ingresa tu correo y contraseña.")),
-        );
+        context.showSnackBar("Por favor, ingresa tu correo y contraseña.", isError: true);
       }
       return;
     }
@@ -70,29 +64,38 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await supabase.auth.signInWithPassword(
+      print('DEBUG: Attempting to sign in with email: ${_emailController.text}');
+      final AuthResponse response = await supabase.auth.signInWithPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
-        );
+      final User? user = response.user;
+
+      if (user != null) {
+        print('DEBUG: User successfully logged in: ${user.id}, Email: ${user.email}');
+
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const ProfilePage()),
+          );
+        }
+      } else {
+        print('DEBUG: Login successful, but user object is null. This is unexpected.');
+        if (mounted) {
+          context.showSnackBar("Error desconocido al obtener el usuario después del inicio de sesión.", isError: true);
+        }
       }
+
     } on AuthException catch (error) {
+      print('ERROR: AuthException during login: ${error.message}');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
-        );
+        context.showSnackBar(error.message, isError: true);
       }
     } catch (e) {
+      print('ERROR: General error during login: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Error al iniciar sesión"),
-              backgroundColor: Colors.red),
-        );
+        context.showSnackBar("Error al iniciar sesión: $e", isError: true);
       }
     } finally {
       if (mounted) {

@@ -14,10 +14,10 @@ import 'package:ayudantia_software/features/home/presentation/pages/home_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/news_screen.dart'; // Importa la pantalla de noticias
 
 //import 'package:ayudantia_software/features/home/presentation/pages/schedule_screen.dart'; // Importa la pantalla de cronograma
-import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart'; // Importa la pantalla de contacto
+import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
+// Importa la pantalla de contacto
 
-// Variable global de Supabase
-final supabase = Supabase.instance.client;
+import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,8 +40,13 @@ Future<void> main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
   );
 
+  // REMOVE THIS LINE: setupDependencies();
+
   runApp(const MyApp());
 }
+
+// RE-ADD THE GLOBAL SUPABASE INSTANCE
+final supabase = Supabase.instance.client;
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
