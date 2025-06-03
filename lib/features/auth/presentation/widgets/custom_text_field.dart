@@ -1,47 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String labelText;
-  final IconData? prefixIcon; // Hacemos el icono opcional
+  final IconData? prefixIcon;
+  final TextInputType? keyboardType;
+  final int? maxLength;
   final bool obscureText;
-  final Widget? suffixIcon; // Permitimos un icono al final (ej. para visibilidad de contraseña)
-  final String? Function(String?)? validator; // Para la validación del formulario
-  final TextInputType? keyboardType; // Tipo de teclado para el input
-  final int? maxLength; // Longitud máxima del texto
-
+  final Widget? suffixIcon;
+  final bool enabled; 
+  final bool readOnly; 
+  final VoidCallback? onTap; 
+  final String? Function(String?)? validator; 
   const CustomTextField({
     super.key,
     required this.controller,
     required this.labelText,
     this.prefixIcon,
-    this.obscureText = false, // Por defecto no es oculto
-    this.suffixIcon,
-    this.validator,
     this.keyboardType,
     this.maxLength,
+    this.obscureText = false,
+    this.suffixIcon,
+    this.enabled = true, 
+    this.readOnly = false, 
+    this.onTap, 
+    this.validator,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: TextFormField( // Usamos TextFormField para integrar con Form y validadores
-        controller: controller,
-        obscureText: obscureText,
-        validator: validator,
-        keyboardType: keyboardType,
-        maxLength: maxLength,
-        decoration: InputDecoration(
-          labelText: labelText,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null, // Mostrar icono si existe
-          suffixIcon: suffixIcon, // Mostrar icono al final si existe
-          filled: true,
-          fillColor: Colors.grey[200],
-          counterText: "", // Oculta el contador de caracteres si usas maxLength
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: labelText,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
+        suffixIcon: suffixIcon,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.grey[200],
+        contentPadding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Colors.grey.shade400, width: 1.0),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Colors.red.shade700, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide(color: Colors.red.shade700, width: 2.0),
         ),
       ),
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      obscureText: obscureText,
+      enabled: enabled, 
+      readOnly: readOnly, 
+      onTap: onTap, 
+      validator: validator,
+      inputFormatters: [
+        LengthLimitingTextInputFormatter(maxLength),
+      ],
+      style: TextStyle(
+        fontSize: 16.0,
+        color: enabled ? Colors.black87 : Colors.grey[700],
+      ),
+      cursorColor: Theme.of(context).primaryColor,
     );
   }
 }
