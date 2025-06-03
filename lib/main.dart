@@ -79,10 +79,18 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
+<<<<<<< HEAD
       home:
           supabase.auth.currentSession == null
               ? const HomeScreen()
               : const ProfilePage(),
+=======
+      // Lógica de navegación condicional basada en el estado de autenticación
+      home: supabase.auth.currentSession == null
+          ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
+          : const ProfilePage(), // Si hay sesión, muestra ProfilePage (o una página de dashboard de usuario)
+      // También puedes usar named routes para una navegación más flexible
+>>>>>>> a745f00440ed1f9f25ccb9344c37cef21c4b4744
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),

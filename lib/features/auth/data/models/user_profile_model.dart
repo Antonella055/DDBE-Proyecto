@@ -8,6 +8,7 @@ class UserProfileModel {
   final String? gender; 
   final String? userType; 
 
+
   UserProfileModel({
     required this.id,
     required this.email,
@@ -25,11 +26,11 @@ class UserProfileModel {
       'email': email,
     };
   }
+
+  
  
-  Map<String, dynamic> toJsonFull() {
+  Map<String, dynamic> toJson() {
     return {
-      'ID': id, 
-      'email': email,
       if (fullName != null) 'full_name': fullName,
       if (birthDate != null) 'birth_date': birthDate!.toIso8601String(),
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
@@ -47,8 +48,8 @@ class UserProfileModel {
       birthDate: json['birth_date'] != null ? DateTime.parse(json['birth_date']) : null,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
-      gender: json['gender'],
-      userType: json['user_type'],
+      gender: json['gender'] as String?,
+      userType: (json['user_type'] as String?), 
     );
   }
 }
