@@ -9,6 +9,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/home_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/news_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +92,7 @@ class _MyAppState extends State<MyApp> {
         '/news': (context) => const NewsScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
+        '/postulation': (context) => const AyudantiaPage(),
       },
     );
   }
