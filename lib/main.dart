@@ -1,10 +1,8 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as developer; // Importar para usar developer.log
-
+import 'package:ayudantia_software/features/home/presentation/pages/ayudantia_page.dart';
 
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart'; // Podría ser la página post-login si es admin/profesor
@@ -29,13 +27,17 @@ Future<void> main() async {
     await dotenv.load();
   } catch (_) {
     // Manejar el error si .env no se carga (quizás solo en producción)
-    developer.log('Error loading .env file, proceeding without it.', name: 'main'); // Usando developer.log
+    developer.log(
+      'Error loading .env file, proceeding without it.',
+      name: 'main',
+    ); // Usando developer.log
   }
 
   // Inicialización de Supabase
   await Supabase.initialize(
     url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
   );
 
   runApp(const MyApp());
@@ -58,7 +60,9 @@ class _MyAppState extends State<MyApp> {
       // Puedes añadir lógica aquí para notificar a la UI sobre cambios de sesión
       // developer.log('Auth event: ${data.event}', name: 'auth'); // Para depuración, usando developer.log
       if (mounted) {
-        setState(() {}); // Fuerza un redibujo para que la pantalla inicial cambie
+        setState(
+          () {},
+        ); // Fuerza un redibujo para que la pantalla inicial cambie
       }
     });
   }
@@ -90,18 +94,24 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       // Lógica de navegación condicional basada en el estado de autenticación
-      home: supabase.auth.currentSession == null
-          ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
-          : const ProfilePage(), // Si hay sesión, muestra ProfilePage (o una página de dashboard de usuario)
+      home:
+          supabase.auth.currentSession == null
+              ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
+              : const ProfilePage(), // Si hay sesión, muestra ProfilePage (o una página de dashboard de usuario)
       // También puedes usar named routes para una navegación más flexible
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfilePage(),
-        '/news': (context) => const NewsScreen(), // NEW: Añade la ruta para NewsScreen
+        '/news':
+            (context) =>
+                const NewsScreen(), // NEW: Añade la ruta para NewsScreen
         // '/schedule': (context) => const ScheduleScreen(), // Ruta de ScheduleScreen comentada
-        '/contact': (context) => const ContactScreen(), // Añade la ruta para ContactScreen
+        '/contact':
+            (context) =>
+                const ContactScreen(), // Añade la ruta para ContactScreen
         // Añade otras rutas para admin, profesor, etc. si las tienes
+        '/apply': (context) => const AyudantiaPage(),
       },
     );
   }
@@ -113,13 +123,12 @@ extension ContextExtension on BuildContext {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError
-            ? const Color.fromARGB(255, 211, 47, 47) // Rojo para errores
-            : const Color.fromARGB(255, 76, 175, 80), // Verde para éxito
+        backgroundColor:
+            isError
+                ? const Color.fromARGB(255, 211, 47, 47) // Rojo para errores
+                : const Color.fromARGB(255, 76, 175, 80), // Verde para éxito
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
