@@ -14,20 +14,32 @@ class SupabaseService {
   ///        Se recomienda usar un UUID o timestamp para el nombre del archivo.
   ///
   /// Retorna la URL pública de la imagen si la subida es exitosa, de lo contrario, null.
-  Future<String?> uploadImage(File imageFile, String bucketName, String path) async {
+  Future<String?> uploadImage(
+    File imageFile,
+    String bucketName,
+    String path,
+  ) async {
     try {
-      final String fileName = imageFile.path.split('/').last; // Obtiene el nombre del archivo original
-      final String filePathInBucket = '$path/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      final String fileName =
+          imageFile.path
+              .split('/')
+              .last; // Obtiene el nombre del archivo original
+      final String filePathInBucket =
+          '$path/${DateTime.now().millisecondsSinceEpoch}_$fileName';
 
       // Sube el archivo al bucket especificado
-      await _supabase.storage.from(bucketName).upload(
-        filePathInBucket,
-        imageFile,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
-      );
+      await _supabase.storage
+          .from(bucketName)
+          .upload(
+            filePathInBucket,
+            imageFile,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
+          );
 
       // Obtiene la URL pública del archivo subido
-      final String publicUrl = _supabase.storage.from(bucketName).getPublicUrl(filePathInBucket);
+      final String publicUrl = _supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePathInBucket);
       return publicUrl;
     } on StorageException catch (e) {
       print('Error al subir imagen a Supabase Storage: ${e.message}');
@@ -45,7 +57,9 @@ class SupabaseService {
   String getPublicImageUrl(String bucketName, String path) {
     // Tu implementación original ya maneja esto, solo la encapsulamos con try-catch para robustez.
     try {
-      final String publicUrl = _supabase.storage.from(bucketName).getPublicUrl(path);
+      final String publicUrl = _supabase.storage
+          .from(bucketName)
+          .getPublicUrl(path);
       return publicUrl;
     } catch (e) {
       print('Error al obtener URL pública de Supabase Storage: $e');
@@ -64,9 +78,11 @@ class SupabaseService {
       // Selecciona todas las columnas y ordena por 'published_at' de forma descendente.
       // Si no tienes 'published_at', puedes omitir .order() o usar otra columna.
       final List<Map<String, dynamic>> response = await _supabase
-          .from('news_articles') // Asegúrate de que 'news_articles' sea el nombre correcto de tu tabla
+          .from(
+            'news_articles',
+          ) // Asegúrate de que 'news_articles' sea el nombre correcto de tu tabla
           .select('*')
-          .order('published_at', ascending: false); 
+          .order('published_at', ascending: false);
 
       // Mapea la respuesta JSON a una lista de objetos NewsArticle
       return response.map((json) => NewsArticle.fromJson(json)).toList();
@@ -74,5 +90,51 @@ class SupabaseService {
       print('Error fetching news articles: $e');
       rethrow; // Relanza la excepción para que sea manejada en el UI, por ejemplo, mostrando un mensaje de error.
     }
+  }
+
+  Future<List<Map<String, dynamic>>> getCalendario() async {
+    final response = await _supabase
+        .from('calendario')
+        .select()
+        .order('dia', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> addActivity({
+    required DateTime dia,
+    required String evento,
+    required String descripcion,
+    required String lugar,
+    required String hora, // formato "HH:mm:ss"
+  }) async {
+    await _supabase.from('calendario').insert({
+      'dia': dia.toIso8601String().split('T')[0],
+      'evento': evento,
+      'descripcion': descripcion,
+      'lugar': lugar,
+      'hora': hora,
+    });
+  }
+
+  Future<void> deleteActivity(int id) async {
+    await _supabase.from('calendario').delete().eq('id', id);
+  }
+
+  Future<void> updateActivity({
+    required int id,
+    required String evento,
+    required String descripcion,
+    required String lugar,
+    required String hora,
+  }) async {
+    await _supabase
+        .from('calendario')
+        .update({
+          'evento': evento,
+          'descripcion': descripcion,
+          'lugar': lugar,
+          'hora': hora,
+        })
+        .eq('id', id);
   }
 }
