@@ -1,12 +1,10 @@
-// lib/features/contact/presentation/pages/contact_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayudantia_software/main.dart';
 import 'package:ayudantia_software/features/home/presentation/widgets/custom_appbar.dart';
 import 'package:ayudantia_software/features/home/presentation/widgets/custom_footer.dart';
-import 'package:ayudantia_software/services/supabase_service.dart'; // Asegúrate de que esta importación sea correcta
-import 'package:ayudantia_software/features/home/presentation/widgets/accesibility_drawer.dart';
+import 'package:ayudantia_software/services/supabase_service.dart';
+import 'package:ayudantia_software/features/home/presentation/widgets/accesibility_drawer.dart'; // Asegúrate de que esta importación sea correcta
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
@@ -24,27 +22,31 @@ class _ContactScreenState extends State<ContactScreen> {
   bool _readableFont = true;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // ¡Nuevas variables de estado para los modos de color/contraste!
+  bool _grayscale = false;
+  bool _negativeContrast = false;
+  bool _lightBackground = true; // Por defecto, fondo claro
+
   // Controladores para el formulario de contacto
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
-  // MANTENEMOS SupabaseService aquí porque la vamos a usar para la imagen
   final SupabaseService _supabaseService = SupabaseService();
-  final SupabaseClient _supabaseClient = supabase; // Get the client from main.dart
+  final SupabaseClient _supabaseClient = supabase;
 
   // Estilos de texto adaptables
   TextStyle get _textStyle => TextStyle(
         fontSize: _fontSize,
         fontFamily: _readableFont ? 'Arial' : 'Roboto',
-        color: _darkMode ? Colors.white : Colors.black,
+        color: _darkMode ? Colors.white : Colors.black, // Color adaptable al modo oscuro
         decoration: _underlineLinks ? TextDecoration.underline : TextDecoration.none,
       );
 
   Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
   Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
-  Color get _linkTextColor => _highContrast ? Colors.black : Colors.white;
+  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue; // Color adaptable al modo oscuro
 
   // Método para manejar la acción del icono de perfil
   void _onProfileIconPressed() {
@@ -112,6 +114,21 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  // Método para restablecer las configuraciones de accesibilidad
+  void _resetAccessibilitySettings() {
+    setState(() {
+      _fontSize = 16.0;
+      _highContrast = false;
+      _darkMode = false;
+      _underlineLinks = false;
+      _readableFont = true;
+      // Reiniciar los nuevos estados
+      _grayscale = false;
+      _negativeContrast = false;
+      _lightBackground = true;
+    });
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -133,72 +150,61 @@ class _ContactScreenState extends State<ContactScreen> {
         onProfileIconPressed: _onProfileIconPressed,
       ),
       body: Container(
-        color: _backgroundColor,
+        color: _backgroundColor, // Usar el color de fondo adaptable
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sección de Título "Contáctanos"
+              // NUEVA SECCIÓN: Imagen Fija a pantalla completa (ancho) y mitad de alto
+              Image.network(
+                _supabaseService.getPublicImageUrl('images', 'upload/imagen3.jpg'), // Ruta corregida
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height / 2,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: MediaQuery.of(context).size.height / 2,
+                  width: MediaQuery.of(context).size.width,
+                  color: _darkMode ? Colors.grey[600] : Colors.grey[300], // Color de error adaptable
+                  child: Center(
+                    child: Text(
+                      'Error al cargar la imagen de contacto',
+                      style: _textStyle.copyWith(color: _darkMode ? Colors.redAccent : Colors.red), // Color adaptable
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+                loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: MediaQuery.of(context).size.height / 2,
+                    width: MediaQuery.of(context).size.width,
+                    color: _darkMode ? Colors.grey[600] : Colors.grey[200], // Fondo mientras carga adaptable
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                        valueColor: AlwaysStoppedAnimation<Color>(_appBarColor), // Color del indicador adaptable
+                      ),
+                    ),
+                  );
+                },
+              ),
+              
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
                 child: Text(
                   'Contáctanos',
                   style: _textStyle.copyWith(
-                    fontSize: _fontSize + 20,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                    height: 1.2,
+                    fontSize: _fontSize + 12,
+                    fontWeight: FontWeight.bold,
+                    color: _darkMode ? Colors.white : Colors.black87, // Color adaptable
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // NUEVA SECCIÓN: Imagen Fija
-              Center( // Para centrar la imagen en la pantalla
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isLargeScreen ? 120.0 : 32.0, vertical: 16.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.0), // Bordes redondeados para la imagen
-                    child: Image.network(
-                      // *** REEMPLAZA 'your_bucket_name' y 'your_image_name.jpg' ***
-                      _supabaseService.getPublicImageUrl('images', 'contact_banner.jpg'), // Ejemplo: 'images' es el nombre del bucket, 'contact_banner.jpg' es el nombre de tu archivo
-                      width: isLargeScreen ? 600 : MediaQuery.of(context).size.width * 0.8, // Ancho adaptable
-                      height: 250, // Altura fija
-                      fit: BoxFit.cover, // Para que la imagen cubra el espacio
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 250,
-                        width: isLargeScreen ? 600 : MediaQuery.of(context).size.width * 0.8,
-                        color: Colors.grey[300],
-                        child: Center(
-                          child: Text(
-                            'Error al cargar la imagen de contacto',
-                            style: _textStyle.copyWith(color: Colors.red),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          height: 250,
-                          width: isLargeScreen ? 600 : MediaQuery.of(context).size.width * 0.8,
-                          color: Colors.grey[200],
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24), // Espacio después de la imagen
-
-              // Sección de Contacto
+              // Sección de Información de Contacto
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: isLargeScreen ? 120.0 : 32.0),
                 child: Column(
@@ -239,7 +245,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       child: ElevatedButton(
                         onPressed: _submitContactForm,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
+                          backgroundColor: _appBarColor, // Usar el color de la AppBar (adaptable)
                           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -293,26 +299,53 @@ class _ContactScreenState extends State<ContactScreen> {
           ),
         ),
       ),
+      // ¡Aquí está la corrección para el Drawer!
       endDrawer: AccessibilityDrawer(
         fontSize: _fontSize,
         highContrast: _highContrast,
         darkMode: _darkMode,
         underlineLinks: _underlineLinks,
         readableFont: _readableFont,
+        
+        // ¡Pasar los nuevos estados!
+        grayscale: _grayscale,
+        negativeContrast: _negativeContrast,
+        lightBackground: _lightBackground,
+
         onFontSizeChanged: (newSize) => setState(() => _fontSize = newSize),
         onHighContrastChanged: (value) => setState(() => _highContrast = value),
-        onDarkModeChanged: (value) => setState(() => _darkMode = value),
+        onDarkModeChanged: (value) {
+          setState(() {
+            _darkMode = value;
+            _lightBackground = !value; // Sincroniza con el modo oscuro
+          });
+        },
         onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
         onReadableFontChanged: (value) => setState(() => _readableFont = value),
-        onReset: () => setState(() {
-          _fontSize = 16.0;
-          _highContrast = false;
-          _darkMode = false;
-          _underlineLinks = false;
-          _readableFont = true;
-        }),
-        appBarColor: _appBarColor,
-        linkTextColor: _linkTextColor,
+        
+        // ¡Pasar los nuevos callbacks!
+        onGrayscaleChanged: (value) {
+          setState(() {
+            _grayscale = value;
+            if (value) _negativeContrast = false; // Lógica de exclusión mutua
+          });
+        },
+        onNegativeContrastChanged: (value) {
+          setState(() {
+            _negativeContrast = value;
+            if (value) _grayscale = false; // Lógica de exclusión mutua
+          });
+        },
+        onLightBackgroundChanged: (value) {
+          setState(() {
+            _lightBackground = value;
+            _darkMode = !value; // Sincroniza con el modo oscuro
+          });
+        },
+        
+        onReset: _resetAccessibilitySettings, // Usar el método actualizado
+        appBarColor: _appBarColor, // Pasa el color de la AppBar (del getter)
+        linkTextColor: _linkTextColor, // Pasa el color de los enlaces (del getter)
       ),
     );
   }
@@ -323,7 +356,7 @@ class _ContactScreenState extends State<ContactScreen> {
       style: _textStyle.copyWith(
         fontWeight: FontWeight.bold,
         fontSize: _fontSize + 8,
-        color: Colors.black87,
+        color: _darkMode ? Colors.white : Colors.black87, // Color adaptable
       ),
     );
   }
@@ -337,14 +370,14 @@ class _ContactScreenState extends State<ContactScreen> {
           style: _textStyle.copyWith(
             fontWeight: FontWeight.w600,
             fontSize: _fontSize + 2,
-            color: Colors.black87,
+            color: _darkMode ? Colors.white : Colors.black87, // Color adaptable
           ),
         ),
         Text(
           details,
           style: _textStyle.copyWith(
             fontSize: _fontSize,
-            color: Colors.grey[700],
+            color: _darkMode ? Colors.white70 : Colors.grey[700], // Color adaptable
           ),
         ),
         const SizedBox(height: 8),
@@ -360,25 +393,27 @@ class _ContactScreenState extends State<ContactScreen> {
   }) {
     return TextField(
       controller: controller,
-      style: _textStyle,
+      style: _textStyle.copyWith(
+        color: _darkMode ? Colors.white : Colors.black, // Color del texto de entrada adaptable
+      ),
       maxLines: maxLines,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: _textStyle.copyWith(color: Colors.grey[600]),
+        labelStyle: _textStyle.copyWith(color: _darkMode ? Colors.grey[400] : Colors.grey[600]), // Color de la etiqueta adaptable
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[400]!),
+          borderSide: BorderSide(color: _darkMode ? Colors.grey[600]! : Colors.grey[400]!), // Borde adaptable
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[400]!),
+          borderSide: BorderSide(color: _darkMode ? Colors.grey[600]! : Colors.grey[400]!), // Borde adaptable
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+          borderSide: BorderSide(color: _appBarColor, width: 2), // Borde adaptable (usa el color de la AppBar)
         ),
-        fillColor: _darkMode ? Colors.grey[800] : Colors.white,
+        fillColor: _darkMode ? Colors.grey[800] : Colors.white, // Color de fondo del campo adaptable
         filled: true,
       ),
     );
@@ -389,13 +424,13 @@ class _ContactScreenState extends State<ContactScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: _darkMode ? Colors.grey[800] : Colors.white,
+      color: _darkMode ? Colors.grey[800] : Colors.white, // Color de la tarjeta adaptable
       child: ExpansionTile(
         title: Text(
           question,
           style: _textStyle.copyWith(
             fontWeight: FontWeight.w600,
-            color: _darkMode ? Colors.white : Colors.black87,
+            color: _darkMode ? Colors.white : Colors.black87, // Color del título adaptable
           ),
         ),
         children: [
@@ -404,7 +439,7 @@ class _ContactScreenState extends State<ContactScreen> {
             child: Text(
               answer,
               style: _textStyle.copyWith(
-                color: _darkMode ? Colors.white70 : Colors.grey[700],
+                color: _darkMode ? Colors.white70 : Colors.grey[700], // Color de la respuesta adaptable
               ),
               textAlign: TextAlign.justify,
             ),

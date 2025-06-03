@@ -36,7 +36,6 @@ Future<void> main() async {
   }
 
   // Inicialización de Supabase
-
   await Supabase.initialize(
     url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
@@ -101,7 +100,6 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-
       // Lógica de navegación condicional basada en el estado de autenticación
       home: supabase.auth.currentSession == null
           ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
