@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart'; 
-import '../../domain/entities/user_entity.dart';
-import '../../domain/usecases/signup_usecase.dart';
-
+import 'package:ayudantia_software/features/auth/domain/usecases/signup_usecase.dart';
+import 'package:flutter/material.dart';
+import '../../../../core/errors/exceptions.dart';
 
 class SignUpController with ChangeNotifier {
   final SignUpUseCase signUpUseCase;
@@ -10,11 +9,9 @@ class SignUpController with ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
-  UserEntity? _currentUser;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  UserEntity? get currentUser => _currentUser;
 
   Future<void> signUp({
     required String email,
@@ -22,14 +19,14 @@ class SignUpController with ChangeNotifier {
     String? fullName,
     DateTime? birthDate,
     String? gender,
-    String? userType,
+    required String userType,
   }) async {
     _isLoading = true;
-    _errorMessage = null; 
-    notifyListeners(); 
+    _errorMessage = null;
+    notifyListeners();
 
     try {
-      final user = await signUpUseCase.call(
+      await signUpUseCase.call(
         email: email,
         password: password,
         fullName: fullName,
@@ -37,14 +34,18 @@ class SignUpController with ChangeNotifier {
         gender: gender,
         userType: userType,
       );
-      _currentUser = user;
-      _errorMessage = null; 
-    } on Exception catch (e) {
-      _errorMessage = e.toString(); 
-      _currentUser = null;
+
+      _errorMessage = null;
+
+    } on AuthExceptionCustom catch (e) {
+      _errorMessage = e.message;
+    } on ServerException catch (e) {
+      _errorMessage = e.message;
+    } catch (e) {
+      _errorMessage = 'Error inesperado durante el registro: ${e.toString()}';
     } finally {
       _isLoading = false;
-      notifyListeners(); 
+      notifyListeners();
     }
   }
 }

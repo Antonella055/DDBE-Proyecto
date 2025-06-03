@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart';
 import '/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:ayudantia_software/main.dart';
