@@ -22,14 +22,10 @@ import 'package:ayudantia_software/features/home/presentation/pages/contact_scre
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 
 
-// Variable global de Supabase
-final supabase = Supabase.instance.client;
-
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-¿
+
   // Cargar variables de entorno
   try {
     await dotenv.load();
@@ -53,7 +49,7 @@ Future<void> main() async {
 // RE-ADD THE GLOBAL SUPABASE INSTANCE
 final supabase = Supabase.instance.client;
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
 
   const MyApp({super.key});
 
