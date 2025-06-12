@@ -11,6 +11,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/contact_scre
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
 
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -26,9 +27,8 @@ Future<void> main() async {
 
   // Inicialización de Supabase
   await Supabase.initialize(
-    url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
+    url: dotenv.env['SUPABASE_URL'] ! ,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] !,
   );
 
   runApp(const MyApp());
@@ -38,6 +38,7 @@ Future<void> main() async {
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatefulWidget {
+
   const MyApp({super.key});
 
   @override
