@@ -8,6 +8,8 @@ import 'package:ayudantia_software/features/auth/data/models/user_profile_model.
 import 'package:ayudantia_software/features/auth/data/models/student_profile_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/career_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/assistance_type_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/department_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/faculty_model.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:collection/collection.dart';
@@ -31,9 +33,6 @@ class _ProfilePageState extends State<ProfilePage> {
   final _admissionTrimesterController = TextEditingController();
 
   // Controladores para profesor
-  final _departmentIdController = TextEditingController();
-  final _escuelaIdController = TextEditingController();
-  final _facultyIdController = TextEditingController();
   final _hireDateProfessorController = TextEditingController();
   bool? _isActiveProfessor;
 
@@ -42,9 +41,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   List<CareerModel> _careers = [];
   List<AssistanceTypeModel> _assistanceTypes = [];
+  List<DepartmentModel> _departments = [];
+  List<FacultyModel> _faculties = [];
 
   int? _selectedCareerId;
   int? _selectedAssistanceTypeId;
+  int? _selectedDepartmentId;
+  int? _selectedFacultyId;
 
   bool _isLoadingProfile = true;
   bool _isUpdatingProfile = false;
@@ -56,6 +59,8 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _authDataSource = AuthRemoteDataSourceImpl(supabase);
     _loadUserProfile();
+    _loadDepartments();
+    _loadFaculties();
   }
 
   @override
@@ -68,12 +73,27 @@ class _ProfilePageState extends State<ProfilePage> {
     _carnetController.dispose();
     _admissionTrimesterController.dispose();
 
-    _departmentIdController.dispose();
-    _escuelaIdController.dispose();
-    _facultyIdController.dispose();
     _hireDateProfessorController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _loadDepartments() async {
+    final data = await supabase.from('departments').select().limit(1000);
+    setState(() {
+      _departments = (data as List)
+          .map((item) => DepartmentModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  Future<void> _loadFaculties() async {
+    final data = await supabase.from('faculty').select().limit(1000);
+    setState(() {
+      _faculties = (data as List)
+          .map((item) => FacultyModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    });
   }
 
   Future<void> _loadUserProfile() async {
@@ -192,29 +212,45 @@ class _ProfilePageState extends State<ProfilePage> {
                   ProfessorProfileModel(
                     id: currentUser.id,
                     departamentId: null,
-                    escuelaId: null,
-                    facultyId: null,
                     hireDate: null,
                     isActive: true,
                   ),
                 );
                 final loadedProfile = await _authDataSource.getProfessorProfile(currentUser.id);
                 if (mounted && loadedProfile != null) {
+                  // ...existing code...
                   setState(() {
-                    _departmentIdController.text = loadedProfile.departamentId?.toString() ?? '';
-                    _escuelaIdController.text = loadedProfile.escuelaId?.toString() ?? '';
-                    _facultyIdController.text = loadedProfile.facultyId?.toString() ?? '';
+                    _selectedDepartmentId = loadedProfile.departamentId;
+
+                    // Buscar la facultad correspondiente al departamento seleccionado
+                    if (_selectedDepartmentId != null) {
+                      final dept = _departments.firstWhereOrNull(
+                        (d) => d.idDepartment == _selectedDepartmentId,
+                      );
+                      _selectedFacultyId = dept?.idFaculty;
+                    }
+
                     _hireDateProfessorController.text = loadedProfile.hireDate != null
                         ? loadedProfile.hireDate!.toIso8601String().split('T').first
                         : '';
                     _isActiveProfessor = loadedProfile.isActive ?? true;
                   });
+                  // ...existing code...
                 }
               } else {
                 setState(() {
-                  _departmentIdController.text = professorProfile.departamentId?.toString() ?? '';
-                  _escuelaIdController.text = professorProfile.escuelaId?.toString() ?? '';
-                  _facultyIdController.text = professorProfile.facultyId?.toString() ?? '';
+                  _selectedDepartmentId = professorProfile.departamentId;
+
+                  // Buscar la facultad correspondiente al departamento seleccionado
+                  if (_selectedDepartmentId != null) {
+                    final dept = _departments.firstWhereOrNull(
+                      (d) => d.idDepartment == _selectedDepartmentId,
+                    );
+                    _selectedFacultyId = dept?.idFaculty;
+                  } else {
+                    _selectedFacultyId = null;
+                  }
+
                   _hireDateProfessorController.text = professorProfile.hireDate != null
                       ? professorProfile.hireDate!.toIso8601String().split('T').first
                       : '';
@@ -252,8 +288,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ProfessorProfileModel(
                   id: currentUser.id,
                   departamentId: null,
-                  escuelaId: null,
-                  facultyId: null,
                   hireDate: null,
                   isActive: true,
                 ),
@@ -342,9 +376,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (_userProfile?.userType == 'Professor') {
         final updatedProfessorProfile = ProfessorProfileModel(
           id: _userProfile!.id,
-          departamentId: int.tryParse(_departmentIdController.text),
-          escuelaId: int.tryParse(_escuelaIdController.text),
-          facultyId: int.tryParse(_facultyIdController.text),
+          departamentId: _selectedDepartmentId,
           hireDate: _hireDateProfessorController.text.isNotEmpty
               ? DateTime.tryParse(_hireDateProfessorController.text)
               : null,
@@ -545,7 +577,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
             Text(
               'Correo Electrónico:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
@@ -559,7 +594,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
             Text(
               'Nombre Completo:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
@@ -572,7 +610,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
             Text(
               'Fecha de Nacimiento:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
@@ -586,7 +627,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
             Text(
               'Género:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
@@ -599,7 +643,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
             Text(
               'Tipo de Usuario:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
@@ -614,7 +661,11 @@ class _ProfilePageState extends State<ProfilePage> {
             if (isStudent) ...[
               const Text(
                 'Información de Estudiante',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF003087),
+                ),
               ),
               const SizedBox(height: 10),
               CustomTextField(
@@ -720,28 +771,86 @@ class _ProfilePageState extends State<ProfilePage> {
             if (isProfessor) ...[
               const Text(
                 'Información de Profesor',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF003087),
+                ),
               ),
               const SizedBox(height: 10),
-              CustomTextField(
-                controller: _departmentIdController,
-                labelText: 'ID Departamento',
-                prefixIcon: Icons.apartment,
-                keyboardType: TextInputType.number,
+              
+              // ...existing code...
+              const SizedBox(height: 10),
+              DropdownButtonFormField<int>(
+                decoration: InputDecoration(
+                  labelText: 'Facultad',
+                  prefixIcon: const Icon(Icons.account_balance),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+                value: _selectedFacultyId,
+                items: _faculties.map((fac) {
+                  return DropdownMenuItem<int>(
+                    value: fac.idFaculty,
+                    child: Text(fac.name),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedFacultyId = newValue;
+                    // Limpiar departamento si la facultad cambia o ya no corresponde
+                    if (_selectedDepartmentId != null) {
+                      final dept = _departments.firstWhereOrNull(
+                        (d) => d.idDepartment == _selectedDepartmentId,
+                      );
+                      if (dept == null || dept.idFaculty != newValue) {
+                        _selectedDepartmentId = null;
+                      }
+                    }
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona una facultad';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
-              CustomTextField(
-                controller: _escuelaIdController,
-                labelText: 'ID Escuela',
-                prefixIcon: Icons.school,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: _facultyIdController,
-                labelText: 'ID Facultad',
-                prefixIcon: Icons.account_balance,
-                keyboardType: TextInputType.number,
+              DropdownButtonFormField<int>(
+                decoration: InputDecoration(
+                  labelText: 'Departamento',
+                  prefixIcon: const Icon(Icons.apartment),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+                value: _selectedDepartmentId,
+                items: _departments
+                    .where((dept) => _selectedFacultyId == null || dept.idFaculty == _selectedFacultyId)
+                    .map((dept) {
+                  return DropdownMenuItem<int>(
+                    value: dept.idDepartment,
+                    child: Text(dept.dptName),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedDepartmentId = newValue;
+                    // Si selecciona un departamento, selecciona automáticamente la facultad correspondiente
+                    final dept = _departments.firstWhereOrNull((d) => d.idDepartment == newValue);
+                    if (dept != null) {
+                      _selectedFacultyId = dept.idFaculty;
+                    }
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona un departamento';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 15),
               CustomTextField(
@@ -751,26 +860,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 readOnly: true,
                 onTap: () => _selectDate(context, _hireDateProfessorController),
               ),
-              const SizedBox(height: 15),
-              Row(
-                children: [
-                  const Text('Estado:'),
-                  const SizedBox(width: 10),
-                  DropdownButton<bool>(
-                    value: _isActiveProfessor ?? true,
-                    items: const [
-                      DropdownMenuItem(value: true, child: Text('Activo')),
-                      DropdownMenuItem(value: false, child: Text('Inactivo')),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _isActiveProfessor = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
               const SizedBox(height: 20),
+              // ...existing code...
             ],
 
             SizedBox(
