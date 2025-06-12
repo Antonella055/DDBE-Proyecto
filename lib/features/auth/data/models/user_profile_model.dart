@@ -6,8 +6,8 @@ class UserProfileModel {
   final DateTime? createdAt; 
   final DateTime? updatedAt; 
   final String? gender; 
-  final String? userType; 
-
+  final String? userType;
+  final String? avatarUrl; 
 
   UserProfileModel({
     required this.id,
@@ -18,25 +18,28 @@ class UserProfileModel {
     this.updatedAt,
     this.gender,
     this.userType,
+    this.avatarUrl, 
   });
 
   Map<String, dynamic> toJsonForInitialSignup() {
     return {
       'ID': id, 
       'email': email,
+      if (avatarUrl != null) 'avatar_url': avatarUrl, 
     };
   }
 
-  
- 
   Map<String, dynamic> toJson() {
     return {
+      'ID': id,
+      'email': email,
       if (fullName != null) 'full_name': fullName,
       if (birthDate != null) 'birth_date': birthDate!.toIso8601String(),
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
       if (gender != null) 'gender': gender,
       if (userType != null) 'user_type': userType,
+      if (avatarUrl != null) 'avatar_url': avatarUrl, 
     };
   }
 
@@ -49,7 +52,22 @@ class UserProfileModel {
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
       gender: json['gender'] as String?,
-      userType: (json['user_type'] as String?), 
+      userType: (json['user_type'] as String?),
+      avatarUrl: json['avatar_url'] as String?, 
+    );
+  }
+
+  UserProfileModel copyWith({required String userType, String? avatarUrl}) {
+    return UserProfileModel(
+      id: this.id,
+      email: this.email,
+      fullName: this.fullName,
+      birthDate: this.birthDate,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      gender: this.gender,
+      userType: userType,
+      avatarUrl: avatarUrl ?? this.avatarUrl, 
     );
   }
 }
