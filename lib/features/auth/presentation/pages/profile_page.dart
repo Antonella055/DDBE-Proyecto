@@ -10,6 +10,7 @@ import 'package:ayudantia_software/features/auth/data/models/career_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/assistance_type_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/department_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/faculty_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/admin_model.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:collection/collection.dart';
@@ -23,6 +24,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+
 class _ProfilePageState extends State<ProfilePage> {
   final _fullNameController = TextEditingController();
   final _birthDateController = TextEditingController();
@@ -32,12 +34,12 @@ class _ProfilePageState extends State<ProfilePage> {
   final _carnetController = TextEditingController();
   final _admissionTrimesterController = TextEditingController();
 
-  // Controladores para profesor
   final _hireDateProfessorController = TextEditingController();
   bool? _isActiveProfessor;
 
   UserProfileModel? _userProfile;
   StudentProfileModel? _studentProfile;
+  AdminModel? _adminProfile;
 
   List<CareerModel> _careers = [];
   List<AssistanceTypeModel> _assistanceTypes = [];
@@ -80,6 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadDepartments() async {
     final data = await supabase.from('departments').select().limit(1000);
+    if (!mounted) return;
     setState(() {
       _departments = (data as List)
           .map((item) => DepartmentModel.fromJson(item as Map<String, dynamic>))
@@ -89,6 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadFaculties() async {
     final data = await supabase.from('faculty').select().limit(1000);
+    if (!mounted) return;
     setState(() {
       _faculties = (data as List)
           .map((item) => FacultyModel.fromJson(item as Map<String, dynamic>))
@@ -140,11 +144,13 @@ class _ProfilePageState extends State<ProfilePage> {
           _genderController.text = _userProfile?.gender ?? '';
           _userTypeController.text = _userProfile?.userType ?? '';
 
-          String expectedUserType = 'Other';
-          if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
-            expectedUserType = 'Student';
-          } else if (currentUser.email!.endsWith('@unimet.edu.ve')) {
-            expectedUserType = 'Professor';
+          String expectedUserType = _userProfile!.userType ?? 'Other';
+          if (_userProfile!.userType != 'Admin') {
+            if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
+              expectedUserType = 'Student';
+            } else if (currentUser.email!.endsWith('@unimet.edu.ve')) {
+              expectedUserType = 'Professor';
+            }
           }
           if (_userProfile!.userType != expectedUserType) {
             _userProfile = _userProfile!.copyWith(userType: expectedUserType);
@@ -202,7 +208,6 @@ class _ProfilePageState extends State<ProfilePage> {
             }
           }
 
-          // Lógica para profesor: crea el perfil si no existe y lo carga
           if (_userProfile?.userType == 'Professor') {
             final professorProfile =
                 await _authDataSource.getProfessorProfile(currentUser.id);
@@ -218,30 +223,23 @@ class _ProfilePageState extends State<ProfilePage> {
                 );
                 final loadedProfile = await _authDataSource.getProfessorProfile(currentUser.id);
                 if (mounted && loadedProfile != null) {
-                  // ...existing code...
                   setState(() {
                     _selectedDepartmentId = loadedProfile.departamentId;
-
-                    // Buscar la facultad correspondiente al departamento seleccionado
                     if (_selectedDepartmentId != null) {
                       final dept = _departments.firstWhereOrNull(
                         (d) => d.idDepartment == _selectedDepartmentId,
                       );
                       _selectedFacultyId = dept?.idFaculty;
                     }
-
                     _hireDateProfessorController.text = loadedProfile.hireDate != null
                         ? loadedProfile.hireDate!.toIso8601String().split('T').first
                         : '';
                     _isActiveProfessor = loadedProfile.isActive ?? true;
                   });
-                  // ...existing code...
                 }
               } else {
                 setState(() {
                   _selectedDepartmentId = professorProfile.departamentId;
-
-                  // Buscar la facultad correspondiente al departamento seleccionado
                   if (_selectedDepartmentId != null) {
                     final dept = _departments.firstWhereOrNull(
                       (d) => d.idDepartment == _selectedDepartmentId,
@@ -250,7 +248,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   } else {
                     _selectedFacultyId = null;
                   }
-
                   _hireDateProfessorController.text = professorProfile.hireDate != null
                       ? professorProfile.hireDate!.toIso8601String().split('T').first
                       : '';
@@ -259,12 +256,24 @@ class _ProfilePageState extends State<ProfilePage> {
               }
             }
           }
+
+          if (_userProfile?.userType == 'Admin') {
+            final adminProfile = await _authDataSource.getAdmin(currentUser.id);
+            if (mounted) {
+              setState(() {
+                _adminProfile = adminProfile;
+              });
+            }
+          }
         } else {
           String initialUserType = 'Other';
           if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
             initialUserType = 'Student';
           } else if (currentUser.email!.endsWith('@unimet.edu.ve')) {
             initialUserType = 'Professor';
+          }
+          if (_userProfile?.userType == 'Admin') {
+            initialUserType = 'Admin';
           }
 
           _userProfile = UserProfileModel(
@@ -290,6 +299,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   departamentId: null,
                   hireDate: null,
                   isActive: true,
+                ),
+              );
+            }
+            if (initialUserType == 'Admin') {
+              await _authDataSource.createAdmin(
+                AdminModel(
+                  idAdmin: currentUser.id,
+                  createdDate:DateTime.now(),
+                  isActive: true,
+                  role: null,
+                  inactiveSince: null,
                 ),
               );
             }
@@ -480,7 +500,6 @@ class _ProfilePageState extends State<ProfilePage> {
             .from('avatars')
             .getPublicUrl(imagePathInBucket);
 
-        // Actualiza el perfil general con el nuevo avatar
         final updatedProfile = _userProfile!.copyWith(
           avatarUrl: publicUrl,
           userType: _userProfile!.userType ?? '',
@@ -517,6 +536,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final String? currentUserType = _userProfile?.userType;
     final bool isStudent = currentUserType == 'Student';
     final bool isProfessor = currentUserType == 'Professor';
+    final bool isAdmin = currentUserType == 'Admin';
 
     if (_isLoadingProfile) {
       return Scaffold(
@@ -587,7 +607,7 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: TextEditingController(text: _userProfile?.email ?? 'N/A'),
               labelText: 'Email',
               prefixIcon: Icons.email,
-              enabled: false,
+              enabled: !isAdmin,
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
@@ -604,6 +624,7 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: _fullNameController,
               labelText: 'Nombre Completo',
               prefixIcon: Icons.person,
+              enabled: true,
               maxLength: 100,
             ),
             const SizedBox(height: 20),
@@ -620,43 +641,109 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: _birthDateController,
               labelText: 'Fecha de Nacimiento (YYYY-MM-DD)',
               prefixIcon: Icons.calendar_today,
+              enabled: !isAdmin,
               readOnly: true,
-              onTap: () => _selectDate(context, _birthDateController),
             ),
             const SizedBox(height: 20),
 
-            Text(
-              'Género:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF003087),
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: _genderController,
+            // ...existing code...
+          Text(
+            'Género:',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: const Color(0xFF003087),
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _genderController.text.isNotEmpty ? _genderController.text : null,
+            decoration: InputDecoration(
               labelText: 'Género',
-              prefixIcon: Icons.person_outline,
-              maxLength: 50,
+              prefixIcon: const Icon(Icons.person_outline),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
             ),
-            const SizedBox(height: 20),
+            items: const [
+              DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
+              DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
+              DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+            ],
+            onChanged: !isAdmin
+                ? (String? value) {
+                    setState(() {
+                      _genderController.text = value ?? '';
+                    });
+                  }
+                : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor selecciona un género';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          // ...existing code...
 
-            Text(
-              'Tipo de Usuario:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF003087),
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: _userTypeController,
-              labelText: 'Tipo de Usuario',
-              prefixIcon: Icons.category,
-              enabled: false,
-              maxLength: 50,
-            ),
-            const SizedBox(height: 30),
+            
+
+            if (isAdmin && _adminProfile != null) ...[
+              const Text(
+                'Información de Administrador',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF003087),
+                ),
+              ),
+              const SizedBox(height: 10),
+              CustomTextField(
+                controller: TextEditingController(text: _adminProfile!.idAdmin),
+                labelText: 'ID Administrador',
+                prefixIcon: Icons.badge,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(
+                  text: _adminProfile!.createdDate != null
+                      ? _adminProfile!.createdDate!.toIso8601String().split('T').first
+                      : '',
+                ),
+                labelText: 'Fecha de Creación',
+                prefixIcon: Icons.calendar_today,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(
+                  text: _adminProfile!.isActive == true ? 'Activo' : 'Inactivo',
+                ),
+                labelText: 'Estado',
+                prefixIcon: Icons.verified_user,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(text: _adminProfile!.role ?? ''),
+                labelText: 'Rol',
+                prefixIcon: Icons.security,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(
+                  text: _adminProfile!.inactiveSince != null
+                      ? _adminProfile!.inactiveSince!.toIso8601String().split('T').first
+                      : '',
+                ),
+                labelText: 'Inactivo Desde',
+                prefixIcon: Icons.event_busy,
+                enabled: false,
+              ),
+              const SizedBox(height: 20),
+            ],
 
             if (isStudent) ...[
               const Text(
@@ -672,6 +759,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 controller: _carnetController,
                 labelText: 'Carnet',
                 prefixIcon: Icons.card_membership,
+                enabled: true,
                 keyboardType: TextInputType.text,
                 maxLength: 20,
               ),
@@ -762,8 +850,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 labelText: 'Trimestre de Admisión (YYYY-MM-DD)',
                 prefixIcon: Icons.date_range,
                 keyboardType: TextInputType.datetime,
-                readOnly: true,
-                onTap: () => _selectDate(context, _admissionTrimesterController),
+                enabled: true,
               ),
               const SizedBox(height: 20),
             ],
@@ -778,9 +865,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 10),
-              
-              // ...existing code...
-              const SizedBox(height: 10),
+
               DropdownButtonFormField<int>(
                 decoration: InputDecoration(
                   labelText: 'Facultad',
@@ -799,7 +884,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 onChanged: (int? newValue) {
                   setState(() {
                     _selectedFacultyId = newValue;
-                    // Limpiar departamento si la facultad cambia o ya no corresponde
                     if (_selectedDepartmentId != null) {
                       final dept = _departments.firstWhereOrNull(
                         (d) => d.idDepartment == _selectedDepartmentId,
@@ -838,7 +922,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 onChanged: (int? newValue) {
                   setState(() {
                     _selectedDepartmentId = newValue;
-                    // Si selecciona un departamento, selecciona automáticamente la facultad correspondiente
                     final dept = _departments.firstWhereOrNull((d) => d.idDepartment == newValue);
                     if (dept != null) {
                       _selectedFacultyId = dept.idFaculty;
@@ -861,7 +944,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () => _selectDate(context, _hireDateProfessorController),
               ),
               const SizedBox(height: 20),
-              // ...existing code...
             ],
 
             SizedBox(

@@ -1,4 +1,5 @@
 
+import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -113,7 +114,13 @@ class _MyAppState extends State<MyApp> {
        // '/schedule': (context) => const ScheduleScreen(), // Ruta de ScheduleScreen comentada
         '/contact': (context) => const ContactScreen(), // Añade la ruta para ContactScreen
         // Añade otras rutas para admin, profesor, etc. si las tienes
-
+        // Lee el access_token de la URL (para Flutter web)
+        '/reset-password': (context) {
+        final uri = Uri.base;
+        final codeFromUrl = uri.queryParameters['code'];
+        return ResetPasswordPage(code: codeFromUrl); // Pasa el código si está presente
+      },
+      
       },
     );
   }
