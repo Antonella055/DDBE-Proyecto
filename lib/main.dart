@@ -10,6 +10,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/news_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/help_request_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,9 +82,10 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       // Lógica de navegación condicional basada en el estado de autenticación
-      home: supabase.auth.currentSession == null
-          ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
-          : const ProfilePage(), // Si hay sesión, muestra ProfilePage (o una página de dashboard de usuario)
+      home:
+          supabase.auth.currentSession == null
+              ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
+              : const ProfilePage(), // Si hay sesión, muestra ProfilePage (o una página de dashboard de usuario)
       // También puedes usar named routes para una navegación más flexible
       routes: {
         '/login': (context) => const LoginPage(),
@@ -92,7 +94,12 @@ class _MyAppState extends State<MyApp> {
         '/news': (context) => const NewsScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
-        '/postulation': (context) => const AyudantiaPage(),
+        '/postulation':
+            (context) =>
+                const AyudantiaPage(), // Aquí es donde tu ruta '/postulation' apunta a AyudantiaPage
+        '/help':
+            (context) =>
+                const HelpRequestScreen(), // <-- ¡Esta es la ruta crucial para "Solicitar Ayuda"!
       },
     );
   }
