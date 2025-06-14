@@ -144,6 +144,37 @@ class _ProfilePageState extends State<ProfilePage> {
           _genderController.text = _userProfile?.gender ?? '';
           _userTypeController.text = _userProfile?.userType ?? '';
 
+          if (_userProfile?.userType == 'Admin') {
+            final adminProfile = await _authDataSource.getAdmin(currentUser.id);
+            if (adminProfile == null) {
+              try {
+                await _authDataSource.createAdmin(
+                  AdminModel(
+                    idAdmin: currentUser.id,
+                    createdDate: DateTime.now(),
+                    isActive: true,
+                    role: null,
+                    inactiveSince: null,
+                  ),
+                );
+                print('Admin creado automáticamente');
+              } catch (e) {
+                print('Error al crear admin: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al crear admin: $e')),
+                  );
+                }
+              }
+            }
+            if (mounted) {
+              setState(() {
+                _adminProfile = adminProfile;
+              });
+            }
+          }
+  
+
           String expectedUserType = _userProfile!.userType ?? 'Other';
           if (_userProfile!.userType != 'Admin') {
             if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
@@ -301,17 +332,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   isActive: true,
                 ),
               );
-            }
-            if (initialUserType == 'Admin') {
-              await _authDataSource.createAdmin(
-                AdminModel(
-                  idAdmin: currentUser.id,
-                  createdDate:DateTime.now(),
-                  isActive: true,
-                  role: null,
-                  inactiveSince: null,
-                ),
-              );
+            
+              
             }
 
             if (mounted) {

@@ -82,7 +82,8 @@ class _MyAppState extends State<MyApp> {
         fontFamily: 'Arial', // Tu fuente preferida
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFFF57C00), // Naranja corporativo (tu color)
-          primary: const Color(0xFF673AB7), // Morado corporativo (tu color)
+          primary:Color.fromARGB(255, 0, 47, 135), 
+
           brightness: Brightness.light,
         ),
         useMaterial3: true,

@@ -293,7 +293,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     Future<void> createAdmin(AdminModel admin) async {
       try {
         await supabaseClient
-            .from('administrator')
+            .from('admin')
             .insert(admin.toJson());
       } on PostgrestException catch (e) {
         throw ServerException(message: e.message);
@@ -306,7 +306,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     Future<AdminModel?> getAdmin(String adminId) async {
       try {
         final data = await supabaseClient
-            .from('administrator')
+            .from('admin')
             .select()
             .eq('id_admin', adminId)
             .maybeSingle();
@@ -327,7 +327,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     Future<void> updateAdmin(AdminModel admin) async {
       try {
         await supabaseClient
-            .from('administrator')
+            .from('admin')
             .update(admin.toJson())
             .eq('id_admin', admin.idAdmin);
       } on PostgrestException catch (e) {
