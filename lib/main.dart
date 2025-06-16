@@ -1,3 +1,5 @@
+
+import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +12,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/news_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
+import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_student.dart';
 
 
 Future<void> main() async {
@@ -64,8 +67,10 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         fontFamily: 'Arial',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFF57C00),
-          primary: const Color(0xFF673AB7),
+
+          seedColor: const Color(0xFFF57C00), // Naranja corporativo (tu color)
+          primary:Color.fromARGB(255, 0, 47, 135), 
+
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -94,6 +99,13 @@ class _MyAppState extends State<MyApp> {
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
         '/postulation': (context) => const AyudantiaPage(),
+        '/create-student': (context) => const AdminCreateStudent(),
+        '/reset-password': (context) {
+        final uri = Uri.base;
+        final codeFromUrl = uri.queryParameters['code'];
+        return ResetPasswordPage(code: codeFromUrl); // Pasa el código si está presente
+        },
+      
       },
     );
   }
