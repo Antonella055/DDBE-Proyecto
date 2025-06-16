@@ -1,23 +1,23 @@
+import 'package:ayudantia_software/features/auth/data/models/user_profile_model.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayudantia_software/features/auth/data/models/student_profile_model.dart';
 
-
-class AdminCreateStudentPage extends StatefulWidget {
-  const AdminCreateStudentPage({super.key});
-
+class AdminCreateStudent extends StatefulWidget {
+  const AdminCreateStudent({super.key});
   @override
-  State<AdminCreateStudentPage> createState() => _AdminCreateStudentPageState();
+  State<AdminCreateStudent> createState() => _AdminCreateStudentState();
 }
 
-class _AdminCreateStudentPageState extends State<AdminCreateStudentPage> {
+class _AdminCreateStudentState extends State<AdminCreateStudent> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _carnetController = TextEditingController();
   final _admissionTrimesterController = TextEditingController();
+  final _fullNameController = TextEditingController();
 
   int? _selectedCareerId;
   int? _selectedAssistanceTypeId;
@@ -51,12 +51,33 @@ class _AdminCreateStudentPageState extends State<AdminCreateStudentPage> {
       return;
     }
 
+    AuthResponse? res;
+
     try {
-      final AuthResponse res = await Supabase.instance.client.auth.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        data: {'role': 'student'},
+    
+    // 1. Crear el usuario en auth
+      res = await Supabase.instance.client.auth.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+      data: {'role': 'student'},
+    );} catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al crear usuario: ${e.toString()}')),
       );
+      return;
+    }
+
+
+
+     final profile = UserProfileModel(
+        id: res.user!.id,
+        userType: 'Student',
+        fullName: _fullNameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
+
+      await Supabase.instance.client.from('profiles').insert(profile.toJson());
+  
 
       final student = StudentProfileModel(
         id: res.user!.id,
@@ -75,11 +96,7 @@ class _AdminCreateStudentPageState extends State<AdminCreateStudentPage> {
         const SnackBar(content: Text('Estudiante creado exitosamente')),
       );
       Navigator.pop(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
-    }
+     
   }
 
   @override
@@ -103,6 +120,11 @@ class _AdminCreateStudentPageState extends State<AdminCreateStudentPage> {
                 decoration: const InputDecoration(labelText: 'Contraseña*'),
                 validator: (value) => value!.length < 6 ? 'Mínimo 6 caracteres' : null,
                 obscureText: true,
+              ),
+              TextFormField(
+                controller: _fullNameController,
+                decoration: const InputDecoration(labelText: 'Nombre completo*'),
+                validator: (value) => value!.isEmpty ? 'Requerido' : null,
               ),
               TextFormField(
                 controller: _carnetController,
@@ -162,4 +184,4 @@ class _AdminCreateStudentPageState extends State<AdminCreateStudentPage> {
       ),
     );
   }
-} 
+}

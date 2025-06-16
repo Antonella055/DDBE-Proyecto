@@ -765,7 +765,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 enabled: false,
               ),
               const SizedBox(height: 20),
-            ],
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/create-student');
+              },
+              child: const Text('Crear Nuevo Estudiante'),
+            ),
+          ],
 
             if (isStudent) ...[
               const Text(
