@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:ayudantia_software/services/supabase_service.dart'; // Importa el servicio de Supabase
-import 'dart:developer' as developer; // Importar para usar developer.log
+import 'package:ayudantia_software/services/supabase_service.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/horas_culminadas_screen.dart'; // Import correcto
+import 'dart:developer' as developer;
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Color linkTextColor;
-  final VoidCallback? onProfileIconPressed; // NEW: Callback para el icono de perfil
+  final VoidCallback? onProfileIconPressed;
 
   CustomAppBar({
     super.key,
     required this.scaffoldKey,
     required this.linkTextColor,
-    this.onProfileIconPressed, // NEW: Añade al constructor
+    this.onProfileIconPressed,
   });
 
   final SupabaseService _supabaseService = SupabaseService();
@@ -24,29 +25,31 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(
-          bottom: BorderSide(
-            color: Colors.grey,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Colors.grey, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Sección izquierda: Logo y texto "Universidad Metropolitana"
+          // Sección izquierda: Logo
           Row(
             children: [
               Image.network(
                 _supabaseService.getPublicImageUrl('images', 'upload/logo.png'),
                 height: 60,
                 errorBuilder: (context, error, stackTrace) {
-                  developer.log('Error al cargar logo.png: $error', name: 'CustomAppBar'); // Usando developer.log
-                  return const Text('Error al cargar logo.png', style: TextStyle(color: Colors.red));
+                  developer.log(
+                    'Error al cargar logo.png: $error',
+                    name: 'CustomAppBar',
+                  );
+                  return const Text(
+                    'Error al cargar logo.png',
+                    style: TextStyle(color: Colors.red),
+                  );
                 },
               ),
               const SizedBox(width: 12),
-              // Aquí podrías tener el texto de la universidad si lo tuvieras antes
             ],
           ),
 
@@ -57,42 +60,102 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildAppBarMenuItem(context, 'DDBE', Colors.orange, route: '/home'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Noticias', Colors.black87, route: '/news'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Cronograma', Colors.black87, route: '/calendar'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Postúlate', Colors.black87, route: '/apply'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Contacto', Colors.black87, route: '/contact'), // ¡Aquí está la navegación a Contacto!
-                    _buildAppBarMenuItem(context, 'Más', Colors.black87, hasDropdown: true, route: '/more'), // Ejemplo de ruta
+                    _buildAppBarMenuItem(
+                      context,
+                      'DDBE',
+                      Colors.orange,
+                      route: '/home',
+                    ),
+                    _buildAppBarMenuItem(
+                      context,
+                      'Noticias',
+                      Colors.black87,
+                      route: '/news',
+                    ),
+                    _buildAppBarMenuItem(
+                      context,
+                      'Cronograma',
+                      Colors.black87,
+                      route: '/calendar',
+                    ),
+                    _buildAppBarMenuItem(
+                      context,
+                      'Postúlate',
+                      Colors.black87,
+                      route: '/apply',
+                    ),
+                    _buildAppBarMenuItem(
+                      context,
+                      'Contacto',
+                      Colors.black87,
+                      route: '/contact',
+                    ),
+                    _buildAppBarMenuItem(
+                      context,
+                      'Dashboard',
+                      const Color.fromARGB(255, 0, 0, 0),
+                      route: '/dashboard',
+                    ),
+                    _buildAppBarMenuItem(
+                      context,
+                      'Más',
+                      Colors.black87,
+                      hasDropdown: true,
+                      route: '/more',
+                    ),
                   ],
                 ),
               ),
             ),
 
-          // Sección derecha: Iconos (notificaciones, mensajes, usuario, búsqueda)
+          // Sección derecha: Iconos
           Row(
             children: [
               IconButton(
                 icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Icono de notificaciones presionado', name: 'CustomAppBar'); // Usando developer.log
+                  developer.log(
+                    'Icono de notificaciones presionado',
+                    name: 'CustomAppBar',
+                  );
                 },
               ),
               IconButton(
                 icon: Icon(Icons.message, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Icono de mensaje presionado', name: 'CustomAppBar'); // Usando developer.log
+                  developer.log(
+                    'Icono de mensaje presionado',
+                    name: 'CustomAppBar',
+                  );
                 },
               ),
-              // NEW: Icono de perfil de usuario con el callback
-              if (onProfileIconPressed != null) // Solo muestra si se proporciona el callback
+              // BOTÓN HORAS CULMINADAS
+              IconButton(
+                icon: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.deepPurple,
+                ),
+                tooltip: 'Horas Culminadas',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const HorasCulminadasScreen(),
+                    ),
+                  );
+                },
+              ),
+              if (onProfileIconPressed != null)
                 IconButton(
                   icon: Icon(Icons.account_circle, color: Colors.grey[700]),
-                  onPressed: onProfileIconPressed, // Usa el callback pasado
+                  onPressed: onProfileIconPressed,
                 ),
               IconButton(
                 icon: Icon(Icons.search, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Icono de búsqueda presionado', name: 'CustomAppBar'); // Usando developer.log
+                  developer.log(
+                    'Icono de búsqueda presionado',
+                    name: 'CustomAppBar',
+                  );
                 },
               ),
               if (!isLargeScreen)
@@ -111,15 +174,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(80.0);
 
   // Widget auxiliar para construir cada ítem del menú de la barra de navegación
-  Widget _buildAppBarMenuItem(BuildContext context, String text, Color color, {bool hasDropdown = false, String? route}) {
+  Widget _buildAppBarMenuItem(
+    BuildContext context,
+    String text,
+    Color color, {
+    bool hasDropdown = false,
+    String? route,
+    Map<String, dynamic>? arguments,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: InkWell(
         onTap: () {
-          developer.log('Presionaste: $text', name: 'CustomAppBar'); // Usando developer.log
+          developer.log('Presionaste: $text', name: 'CustomAppBar');
           if (route != null) {
-            // Verifica si la ruta no es nula antes de navegar
-            Navigator.of(context).pushNamed(route);
+            Navigator.of(context).pushNamed(route, arguments: arguments);
           }
         },
         child: Row(
@@ -132,7 +201,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 fontSize: 16,
               ),
             ),
-            if (hasDropdown) const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
+            if (hasDropdown)
+              const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
           ],
         ),
       ),

@@ -137,4 +137,74 @@ class SupabaseService {
         })
         .eq('id', id);
   }
+
+  /// inicio de registrar horas
+  Future<void> registrarHorasCulminadas(
+    DateTime fecha,
+    int horas,
+    String descripcion,
+  ) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Usuario no autenticado');
+    await _supabase.from('horas_culminadas').insert({
+      'id': userId,
+      'fecha': fecha.toIso8601String().split('T')[0],
+      'horas': horas,
+      'descripcion': descripcion,
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> obtenerHorasUsuarioActual() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Usuario no autenticado');
+    final response = await _supabase
+        .from('horas_culminadas')
+        .select('id_hora, horas, fecha, descripcion')
+        .eq('id_estudiante', userId)
+        .order('fecha', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> eliminarHoraCulminada(int idHora) async {
+    await _supabase.from('horas_culminadas').delete().eq('id_hora', idHora);
+  }
+
+  Future<void> editarHoraCulminada(
+    int idHora,
+    DateTime fecha,
+    int horas,
+    String descripcion,
+  ) async {
+    await _supabase
+        .from('horas_culminadas')
+        .update({
+          'fecha': fecha.toIso8601String().split('T')[0],
+          'horas': horas,
+          'descripcion': descripcion,
+        })
+        .eq('id_hora', idHora);
+  }
+
+  /// final de horas registradas
+  /// mostrar las horas de los estudiantes del profesor
+  Future<List<Map<String, dynamic>>> obtenerHorasDeEstudiantesDelProfesor(
+    String profesorId, {
+    String? actividad,
+    int? mes,
+  }) async {
+    var query = _supabase
+        .from('horas_culminadas')
+        .select('horas, fecha, descripcion, estudiantes(nombre)')
+        .eq('id_profesor', profesorId);
+
+    if (actividad != null) {
+      query = query.eq('actividad', actividad);
+    }
+    if (mes != null) {
+      query = query.filter('extract(month from fecha)', 'eq', mes);
+    }
+
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

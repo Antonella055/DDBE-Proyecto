@@ -15,4 +15,3 @@ class CalendarScreen extends StatelessWidget {
     );
   }
 }
-
