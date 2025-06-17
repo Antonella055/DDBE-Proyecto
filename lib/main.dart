@@ -114,13 +114,9 @@ class _MyAppState extends State<MyApp> {
         '/calendar': (context) => const CalendarScreen(), // NEW: Añade la ruta para NewsScreen
        // '/schedule': (context) => const ScheduleScreen(), // Ruta de ScheduleScreen comentada
         '/contact': (context) => const ContactScreen(), // Añade la ruta para ContactScreen
-        // Añade otras rutas para admin, profesor, etc. si las tienes
-        // Lee el access_token de la URL (para Flutter web)
-        '/reset-password': (context) {
-        final uri = Uri.base;
-        final codeFromUrl = uri.queryParameters['code'];
-        return ResetPasswordPage(code: codeFromUrl); // Pasa el código si está presente
-      },
+        '/reset-password': (context) => const ResetPasswordPage(),
+
+      
       
       },
     );

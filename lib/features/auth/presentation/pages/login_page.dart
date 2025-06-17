@@ -69,8 +69,13 @@ class _LoginPageState extends State<LoginPage> {
             ElevatedButton(
               onPressed: () async {
                 try {
+                  final currentUrl = Uri.base;
+                  final redirectUrl =
+                      '${currentUrl.scheme}://${currentUrl.host}:${currentUrl.port}/#/reset-password';
+
                   await Supabase.instance.client.auth.resetPasswordForEmail(
                     _resetEmailController.text.trim(),
+                    redirectTo: redirectUrl,
                   );
                   if (mounted) {
                     Navigator.of(context).pop();
@@ -120,7 +125,6 @@ class _LoginPageState extends State<LoginPage> {
           Container(
             color: Colors.black.withOpacity(0.2),
           ),
-          // Botón de volver en la esquina superior izquierda
           Positioned(
             top: 24,
             left: 24,
@@ -140,10 +144,10 @@ class _LoginPageState extends State<LoginPage> {
                   maxWidth: isMobile ? double.infinity : 500,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.75), 
+                  color: Colors.white.withOpacity(0.75),
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
-                    color: const Color.fromARGB(154, 0, 47, 135), 
+                    color: const Color(0xFF003087),
                     width: 2,
                   ),
                   boxShadow: [
@@ -169,46 +173,46 @@ class _LoginPageState extends State<LoginPage> {
                     const Icon(Icons.g_mobiledata, color: Colors.red, size: 48),
                     const SizedBox(height: 16),
                     TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    maxLength: 64,
-                    decoration: const InputDecoration(
-                      labelText: 'Correo electrónico',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
-                        borderSide: BorderSide(color: Color(0xFF003087)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
-                        borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    maxLength: 40,
-                    decoration: const InputDecoration(
-                      labelText: 'Contraseña',
-                      prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
-                        borderSide: BorderSide(color: Color(0xFF003087)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
-                        borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      maxLength: 64,
+                      decoration: const InputDecoration(
+                        labelText: 'Correo electrónico',
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(30)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(30)),
+                          borderSide: BorderSide(color: Color(0xFF003087)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(30)),
+                          borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      maxLength: 40,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
+                        prefixIcon: Icon(Icons.lock),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(30)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(30)),
+                          borderSide: BorderSide(color: Color(0xFF003087)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(30)),
+                          borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Align(
                       alignment: Alignment.centerRight,
