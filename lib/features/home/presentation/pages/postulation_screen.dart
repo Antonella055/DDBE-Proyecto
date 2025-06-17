@@ -141,10 +141,7 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
                         Navigator.of(context).pushNamed('/help');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
-                              context,
-                            ).primaryColor, // Usar el color primario del tema
+                        backgroundColor:Theme.of(context).primaryColor, // Usar el color primario del tema
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 30,

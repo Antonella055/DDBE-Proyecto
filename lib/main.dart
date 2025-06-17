@@ -98,7 +98,7 @@ class _MyAppState extends State<MyApp> {
         '/postulation': (context) => const AyudantiaPage(),
         '/create-student': (context) => const AdminCreateStudent(),
         '/create-professor': (context) => const AdminCreateProfessor(),
-        '/help': (context) = const HelpRequestScreen(), // <-- ¡Esta es la ruta crucial para "Solicitar Ayuda"!
+        '/help': (context) => const HelpRequestScreen(), // <-- ¡Esta es la ruta crucial para "Solicitar Ayuda"!
         '/reset-password': (context) {
           final uri = Uri.base;
           final codeFromUrl = uri.queryParameters['code'];

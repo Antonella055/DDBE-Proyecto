@@ -113,6 +113,14 @@ class _HelpRequestScreenState extends State<HelpRequestScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loading ? null : _sendHelpRequest,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor, // Color de fondo del tema
+                foregroundColor: Colors.white, // Texto blanco
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 15,
+                  )
+              ),
               child:
                   _loading
                       ? const CircularProgressIndicator(color: Colors.white)
