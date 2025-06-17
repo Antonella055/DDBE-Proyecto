@@ -1,6 +1,5 @@
-// lib/features/auth/presentation/pages/profile_page.dart
-
 import 'dart:typed_data';
+import 'package:ayudantia_software/features/auth/data/models/professor_profile_model.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayudantia_software/main.dart';
@@ -9,6 +8,9 @@ import 'package:ayudantia_software/features/auth/data/models/user_profile_model.
 import 'package:ayudantia_software/features/auth/data/models/student_profile_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/career_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/assistance_type_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/department_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/faculty_model.dart';
+import 'package:ayudantia_software/features/auth/data/models/admin_model.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:collection/collection.dart';
@@ -22,6 +24,7 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+
 class _ProfilePageState extends State<ProfilePage> {
   final _fullNameController = TextEditingController();
   final _birthDateController = TextEditingController();
@@ -31,14 +34,22 @@ class _ProfilePageState extends State<ProfilePage> {
   final _carnetController = TextEditingController();
   final _admissionTrimesterController = TextEditingController();
 
+  final _hireDateProfessorController = TextEditingController();
+  bool? _isActiveProfessor;
+
   UserProfileModel? _userProfile;
   StudentProfileModel? _studentProfile;
+  AdminModel? _adminProfile;
 
   List<CareerModel> _careers = [];
   List<AssistanceTypeModel> _assistanceTypes = [];
+  List<DepartmentModel> _departments = [];
+  List<FacultyModel> _faculties = [];
 
   int? _selectedCareerId;
   int? _selectedAssistanceTypeId;
+  int? _selectedDepartmentId;
+  int? _selectedFacultyId;
 
   bool _isLoadingProfile = true;
   bool _isUpdatingProfile = false;
@@ -48,9 +59,10 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-
     _authDataSource = AuthRemoteDataSourceImpl(supabase);
     _loadUserProfile();
+    _loadDepartments();
+    _loadFaculties();
   }
 
   @override
@@ -63,7 +75,29 @@ class _ProfilePageState extends State<ProfilePage> {
     _carnetController.dispose();
     _admissionTrimesterController.dispose();
 
+    _hireDateProfessorController.dispose();
+
     super.dispose();
+  }
+
+  Future<void> _loadDepartments() async {
+    final data = await supabase.from('departments').select().limit(1000);
+    if (!mounted) return;
+    setState(() {
+      _departments = (data as List)
+          .map((item) => DepartmentModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  Future<void> _loadFaculties() async {
+    final data = await supabase.from('faculty').select().limit(1000);
+    if (!mounted) return;
+    setState(() {
+      _faculties = (data as List)
+          .map((item) => FacultyModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    });
   }
 
   Future<void> _loadUserProfile() async {
@@ -82,7 +116,8 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
         Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginPage()));
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
       }
       if (mounted) {
         setState(() {
@@ -95,7 +130,6 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       _assistanceTypes = await _authDataSource.getAssistanceTypes();
       _assistanceTypes.sort((a, b) => a.type.compareTo(b.type));
-      print('DEBUG: Fetched ${_assistanceTypes.length} assistance types.');
 
       final UserProfileModel? generalProfile =
           await _authDataSource.getUserProfile(currentUser.id);
@@ -110,58 +144,167 @@ class _ProfilePageState extends State<ProfilePage> {
           _genderController.text = _userProfile?.gender ?? '';
           _userTypeController.text = _userProfile?.userType ?? '';
 
-          print('DEBUG: UserType: ${_userProfile?.userType}');
+          if (_userProfile?.userType == 'Admin') {
+            final adminProfile = await _authDataSource.getAdmin(currentUser.id);
+            if (adminProfile == null) {
+              try {
+                await _authDataSource.createAdmin(
+                  AdminModel(
+                    idAdmin: currentUser.id,
+                    createdDate: DateTime.now(),
+                    isActive: true,
+                    role: null,
+                    inactiveSince: null,
+                  ),
+                );
+                print('Admin creado automáticamente');
+              } catch (e) {
+                print('Error al crear admin: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al crear admin: $e')),
+                  );
+                }
+              }
+            }
+            if (mounted) {
+              setState(() {
+                _adminProfile = adminProfile;
+              });
+            }
+          }
+  
+
+          String expectedUserType = _userProfile!.userType ?? 'Other';
+          if (_userProfile!.userType != 'Admin') {
+            if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
+              expectedUserType = 'Student';
+            } else if (currentUser.email!.endsWith('@unimet.edu.ve')) {
+              expectedUserType = 'Professor';
+            }
+          }
+          if (_userProfile!.userType != expectedUserType) {
+            _userProfile = _userProfile!.copyWith(userType: expectedUserType);
+            await _authDataSource.updateUserProfile(_userProfile!);
+            _userTypeController.text = expectedUserType;
+          }
 
           if (_userProfile?.userType == 'Student') {
-            final StudentProfileModel? studentProfile = await _authDataSource.getStudentProfile(currentUser.id);
+            final StudentProfileModel? studentProfile =
+                await _authDataSource.getStudentProfile(currentUser.id);
             if (mounted) {
               if (studentProfile != null) {
                 _studentProfile = studentProfile;
                 _carnetController.text = _studentProfile?.carnet ?? '';
-                _selectedCareerId = _studentProfile?.careerId; 
+                _selectedCareerId = _studentProfile?.careerId;
                 _selectedAssistanceTypeId = _studentProfile?.assistanceTypeId;
 
-                int? usersFacultyId; 
+                int? usersFacultyId;
                 if (_selectedCareerId != null) {
-                  final allCareersForLookup = await _authDataSource.getCareers(); 
-                  print('DEBUG: Fetched ${allCareersForLookup.length} total careers to find user\'s faculty.');
+                  final allCareersForLookup =
+                      await _authDataSource.getCareers();
                   final currentCareer = allCareersForLookup.firstWhereOrNull(
                     (career) => career.careerId == _selectedCareerId,
                   );
-                  usersFacultyId = currentCareer?.idFaculty; 
-                  print('DEBUG: Current career (${currentCareer?.name}) facultyId: $usersFacultyId');
+                  usersFacultyId = currentCareer?.idFaculty;
                 }
-                
-                _careers = await _authDataSource.getCareers(facultyId: usersFacultyId);
-                _careers.sort((a, b) => a.name.compareTo(b.name));
-                print('DEBUG: Loaded ${_careers.length} careers (filtered by faculty ID: $usersFacultyId).');
 
-                _admissionTrimesterController.text = _studentProfile?.admissionTrimester != null
-                    ? _studentProfile!.admissionTrimester!.toIso8601String().split('T').first
-                    : '';
+                _careers =
+                    await _authDataSource.getCareers(facultyId: usersFacultyId);
+                _careers.sort((a, b) => a.name.compareTo(b.name));
+
+                _admissionTrimesterController.text =
+                    _studentProfile?.admissionTrimester != null
+                        ? _studentProfile!.admissionTrimester!
+                            .toIso8601String()
+                            .split('T')
+                            .first
+                        : '';
               } else {
                 _studentProfile = StudentProfileModel(id: currentUser.id);
                 await _authDataSource.createStudentProfile(_studentProfile!);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Perfil de estudiante creado automáticamente.'), backgroundColor: Colors.orange),
+                    const SnackBar(
+                        content: Text(
+                            'Perfil de estudiante creado automáticamente.'),
+                        backgroundColor: Colors.orange),
                   );
                 }
-                _selectedCareerId = null; 
-                _selectedAssistanceTypeId = null; 
-                _careers = await _authDataSource.getCareers(); 
+                _selectedCareerId = null;
+                _selectedAssistanceTypeId = null;
+                _careers = await _authDataSource.getCareers();
                 _careers.sort((a, b) => a.name.compareTo(b.name));
-                print('DEBUG: New student. Loaded ${_careers.length} unfiltered careers.');
               }
             }
           }
-          
+
+          if (_userProfile?.userType == 'Professor') {
+            final professorProfile =
+                await _authDataSource.getProfessorProfile(currentUser.id);
+            if (mounted) {
+              if (professorProfile == null) {
+                await _authDataSource.createProfessorProfile(
+                  ProfessorProfileModel(
+                    id: currentUser.id,
+                    departamentId: null,
+                    hireDate: null,
+                    isActive: true,
+                  ),
+                );
+                final loadedProfile = await _authDataSource.getProfessorProfile(currentUser.id);
+                if (mounted && loadedProfile != null) {
+                  setState(() {
+                    _selectedDepartmentId = loadedProfile.departamentId;
+                    if (_selectedDepartmentId != null) {
+                      final dept = _departments.firstWhereOrNull(
+                        (d) => d.idDepartment == _selectedDepartmentId,
+                      );
+                      _selectedFacultyId = dept?.idFaculty;
+                    }
+                    _hireDateProfessorController.text = loadedProfile.hireDate != null
+                        ? loadedProfile.hireDate!.toIso8601String().split('T').first
+                        : '';
+                    _isActiveProfessor = loadedProfile.isActive ?? true;
+                  });
+                }
+              } else {
+                setState(() {
+                  _selectedDepartmentId = professorProfile.departamentId;
+                  if (_selectedDepartmentId != null) {
+                    final dept = _departments.firstWhereOrNull(
+                      (d) => d.idDepartment == _selectedDepartmentId,
+                    );
+                    _selectedFacultyId = dept?.idFaculty;
+                  } else {
+                    _selectedFacultyId = null;
+                  }
+                  _hireDateProfessorController.text = professorProfile.hireDate != null
+                      ? professorProfile.hireDate!.toIso8601String().split('T').first
+                      : '';
+                  _isActiveProfessor = professorProfile.isActive ?? true;
+                });
+              }
+            }
+          }
+
+          if (_userProfile?.userType == 'Admin') {
+            final adminProfile = await _authDataSource.getAdmin(currentUser.id);
+            if (mounted) {
+              setState(() {
+                _adminProfile = adminProfile;
+              });
+            }
+          }
         } else {
           String initialUserType = 'Other';
           if (currentUser.email!.endsWith('@correo.unimet.edu.ve')) {
             initialUserType = 'Student';
           } else if (currentUser.email!.endsWith('@unimet.edu.ve')) {
             initialUserType = 'Professor';
+          }
+          if (_userProfile?.userType == 'Admin') {
+            initialUserType = 'Admin';
           }
 
           _userProfile = UserProfileModel(
@@ -171,25 +314,31 @@ class _ProfilePageState extends State<ProfilePage> {
           );
           try {
             await _authDataSource.createUserProfile(_userProfile!);
-            
+
             if (initialUserType == 'Student') {
-              await _authDataSource.createStudentProfile(StudentProfileModel(id: currentUser.id));
+              await _authDataSource
+                  .createStudentProfile(StudentProfileModel(id: currentUser.id));
               _selectedCareerId = null;
               _selectedAssistanceTypeId = null;
-              _careers = await _authDataSource.getCareers(); 
+              _careers = await _authDataSource.getCareers();
               _careers.sort((a, b) => a.name.compareTo(b.name));
-              print('DEBUG: New student profile created. Loaded ${_careers.length} unfiltered careers.');
+            }
+            if (initialUserType == 'Professor') {
+              await _authDataSource.createProfessorProfile(
+                ProfessorProfileModel(
+                  id: currentUser.id,
+                  departamentId: null,
+                  hireDate: null,
+                  isActive: true,
+                ),
+              );
+            
+              
             }
 
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Perfil general y de usuario específico creados automáticamente.'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              Navigator.of(context).pushReplacementNamed('/home');
             }
-            _loadUserProfile(); 
             return;
           } catch (e) {
             if (mounted) {
@@ -212,7 +361,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
       }
-      print('ERROR: Exception in _loadUserProfile: $e'); 
     } finally {
       if (mounted) {
         setState(() {
@@ -250,7 +398,8 @@ class _ProfilePageState extends State<ProfilePage> {
         fullName: _fullNameController.text.trim().isNotEmpty ? _fullNameController.text.trim() : null,
         birthDate: _birthDateController.text.trim().isNotEmpty ? DateTime.tryParse(_birthDateController.text.trim()) : null,
         gender: _genderController.text.trim().isNotEmpty ? _genderController.text.trim() : null,
-        userType: _userProfile!.userType,
+        userType: _userProfile!.userType ?? '',
+        avatarUrl: _userProfile!.avatarUrl,
       );
       await _authDataSource.updateUserProfile(updatedGeneralProfile);
 
@@ -258,12 +407,24 @@ class _ProfilePageState extends State<ProfilePage> {
         final updatedStudentProfile = StudentProfileModel(
           id: _userProfile!.id,
           carnet: _carnetController.text.trim().isNotEmpty ? _carnetController.text.trim() : null,
-          careerId: _selectedCareerId, 
+          careerId: _selectedCareerId,
           assistanceTypeId: _selectedAssistanceTypeId,
           admissionTrimester: _admissionTrimesterController.text.trim().isNotEmpty ? DateTime.tryParse(_admissionTrimesterController.text.trim()) : null,
           avatarUrl: _studentProfile?.avatarUrl,
         );
         await _authDataSource.updateStudentProfile(updatedStudentProfile);
+      }
+
+      if (_userProfile?.userType == 'Professor') {
+        final updatedProfessorProfile = ProfessorProfileModel(
+          id: _userProfile!.id,
+          departamentId: _selectedDepartmentId,
+          hireDate: _hireDateProfessorController.text.isNotEmpty
+              ? DateTime.tryParse(_hireDateProfessorController.text)
+              : null,
+          isActive: _isActiveProfessor ?? true,
+        );
+        await _authDataSource.updateProfessorProfile(updatedProfessorProfile);
       }
 
       if (mounted) {
@@ -273,7 +434,7 @@ class _ProfilePageState extends State<ProfilePage> {
             backgroundColor: Colors.green,
           ),
         );
-        _loadUserProfile(); 
+        _loadUserProfile();
       }
     } catch (e) {
       if (mounted) {
@@ -284,7 +445,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
       }
-      print('ERROR: Exception in _updateUserProfile: $e'); 
     } finally {
       if (mounted) {
         setState(() {
@@ -341,63 +501,76 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _uploadAvatar() async {
-  final ImagePicker picker = ImagePicker();
-  final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
-  if (image != null) {
-    try {
-      final String fileExt = path.extension(image.path);
-      final String fileName = '${_userProfile!.id}$fileExt';
-      // CAMBIO AQUÍ: Añadir 'news/' al path
-      final String imagePathInBucket = 'news/$fileName'; 
+    if (image != null) {
+      try {
+        final String fileExt = path.extension(image.path);
+        final String fileName = '${_userProfile!.id}$fileExt';
+        final String imagePathInBucket = 'avatars/$fileName';
 
-      final Uint8List fileBytes = await image.readAsBytes();
+        final Uint8List fileBytes = await image.readAsBytes();
 
-      await supabase.storage.from('avatars').uploadBinary(
-            imagePathInBucket,
-            fileBytes,
-            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
-          );
+        await supabase.storage.from('avatars').uploadBinary(
+              imagePathInBucket,
+              fileBytes,
+              fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+            );
 
-      final String publicUrl = supabase.storage
-          .from('avatars')
-          .getPublicUrl(imagePathInBucket);
+        final String publicUrl = supabase.storage
+            .from('avatars')
+            .getPublicUrl(imagePathInBucket);
 
-      if (_userProfile?.userType == 'Student' && _studentProfile != null) {
-        _studentProfile = _studentProfile!.copyWith(avatarUrl: publicUrl);
-        await _authDataSource.updateStudentProfile(_studentProfile!);
+        final updatedProfile = _userProfile!.copyWith(
+          avatarUrl: publicUrl,
+          userType: _userProfile!.userType ?? '',
+        );
+        await _authDataSource.updateUserProfile(updatedProfile);
+
+        setState(() {
+          _userProfile = updatedProfile;
+        });
+
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Avatar actualizado exitosamente!'),
               backgroundColor: Colors.green,
             ),
           );
-          setState(() {});
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al subir el avatar: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al subir el avatar: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      print('ERROR: Exception in _uploadAvatar: $e');
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     final String? currentUserType = _userProfile?.userType;
     final bool isStudent = currentUserType == 'Student';
+    final bool isProfessor = currentUserType == 'Professor';
+    final bool isAdmin = currentUserType == 'Admin';
 
     if (_isLoadingProfile) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Mi Perfil')),
+        appBar: AppBar(
+          title: const Text('Mi Perfil'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pushReplacementNamed('/home');
+            },
+          ),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -405,6 +578,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mi Perfil'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(context).pushReplacementNamed('/home');
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -417,107 +596,231 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isStudent) ...[
-              Center(
-                child: GestureDetector(
-                  onTap: _uploadAvatar,
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                    backgroundImage: (_studentProfile?.avatarUrl != null && _studentProfile!.avatarUrl!.isNotEmpty)
-                        ? NetworkImage(_studentProfile!.avatarUrl!) as ImageProvider<Object>?
-                        : null,
-                    child: (_studentProfile?.avatarUrl == null || _studentProfile!.avatarUrl!.isEmpty)
-                        ? Icon(
-                            Icons.camera_alt,
-                            size: 50,
-                            color: Theme.of(context).primaryColor,
-                          )
-                        : null,
-                  ),
+            Center(
+              child: GestureDetector(
+                onTap: _uploadAvatar,
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  backgroundImage: (_userProfile?.avatarUrl != null && _userProfile!.avatarUrl!.isNotEmpty)
+                      ? NetworkImage(_userProfile!.avatarUrl!)
+                      : null,
+                  child: (_userProfile?.avatarUrl == null || _userProfile!.avatarUrl!.isEmpty)
+                      ? Icon(
+                          Icons.camera_alt,
+                          size: 50,
+                          color: Theme.of(context).primaryColor,
+                        )
+                      : null,
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
+            const SizedBox(height: 20),
 
             Text(
               'Correo Electrónico:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
               controller: TextEditingController(text: _userProfile?.email ?? 'N/A'),
               labelText: 'Email',
               prefixIcon: Icons.email,
-              enabled: false,
+              enabled: !isAdmin,
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 20),
 
             Text(
               'Nombre Completo:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
               controller: _fullNameController,
               labelText: 'Nombre Completo',
               prefixIcon: Icons.person,
+              enabled: true,
               maxLength: 100,
             ),
             const SizedBox(height: 20),
 
             Text(
               'Fecha de Nacimiento:',
-              style: Theme.of(context).textTheme.titleSmall,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: const Color(0xFF003087),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 8),
             CustomTextField(
               controller: _birthDateController,
               labelText: 'Fecha de Nacimiento (YYYY-MM-DD)',
               prefixIcon: Icons.calendar_today,
+              enabled: !isAdmin,
               readOnly: true,
-              onTap: () => _selectDate(context, _birthDateController),
             ),
             const SizedBox(height: 20),
-            
-            Text(
-              'Género:',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: _genderController,
+
+            // ...existing code...
+          Text(
+            'Género:',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: const Color(0xFF003087),
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _genderController.text.isNotEmpty ? _genderController.text : null,
+            decoration: InputDecoration(
               labelText: 'Género',
-              prefixIcon: Icons.person_outline,
-              maxLength: 50,
+              prefixIcon: const Icon(Icons.person_outline),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
             ),
-            const SizedBox(height: 20),
+            items: const [
+              DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
+              DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
+              DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+            ],
+            onChanged: !isAdmin
+                ? (String? value) {
+                    setState(() {
+                      _genderController.text = value ?? '';
+                    });
+                  }
+                : null,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Por favor selecciona un género';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          // ...existing code...
+
             
-            Text(
-              'Tipo de Usuario:',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: _userTypeController,
-              labelText: 'Tipo de Usuario',
-              prefixIcon: Icons.category,
-              enabled: false,
-              maxLength: 50,
-            ),
-            const SizedBox(height: 30),
+
+            if (isAdmin && _adminProfile != null) ...[
+              const Text(
+                'Información de Administrador',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF003087),
+                ),
+              ),
+              const SizedBox(height: 10),
+              CustomTextField(
+                controller: TextEditingController(text: _adminProfile!.idAdmin),
+                labelText: 'ID Administrador',
+                prefixIcon: Icons.badge,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(
+                  text: _adminProfile!.createdDate != null
+                      ? _adminProfile!.createdDate!.toIso8601String().split('T').first
+                      : '',
+                ),
+                labelText: 'Fecha de Creación',
+                prefixIcon: Icons.calendar_today,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(
+                  text: _adminProfile!.isActive == true ? 'Activo' : 'Inactivo',
+                ),
+                labelText: 'Estado',
+                prefixIcon: Icons.verified_user,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(text: _adminProfile!.role ?? ''),
+                labelText: 'Rol',
+                prefixIcon: Icons.security,
+                enabled: false,
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: TextEditingController(
+                  text: _adminProfile!.inactiveSince != null
+                      ? _adminProfile!.inactiveSince!.toIso8601String().split('T').first
+                      : '',
+                ),
+                labelText: 'Inactivo Desde',
+                prefixIcon: Icons.event_busy,
+                enabled: false,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/create-student');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Crear Estudiante'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/create-professor');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Crear Profesor'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ]
+          ,
 
             if (isStudent) ...[
               const Text(
                 'Información de Estudiante',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF003087),
+                ),
               ),
               const SizedBox(height: 10),
               CustomTextField(
                 controller: _carnetController,
                 labelText: 'Carnet',
                 prefixIcon: Icons.card_membership,
+                enabled: true,
                 keyboardType: TextInputType.text,
                 maxLength: 20,
               ),
@@ -553,7 +856,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   setState(() {
                     _selectedCareerId = newValue;
                   });
-                  print('DEBUG: Selected Career ID: $_selectedCareerId');
                 },
                 validator: (value) {
                   if (value == null) {
@@ -594,7 +896,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   setState(() {
                     _selectedAssistanceTypeId = newValue;
                   });
-                  print('DEBUG: Selected Assistance Type ID: $_selectedAssistanceTypeId');
                 },
                 validator: (value) {
                   if (value == null) {
@@ -610,12 +911,102 @@ class _ProfilePageState extends State<ProfilePage> {
                 labelText: 'Trimestre de Admisión (YYYY-MM-DD)',
                 prefixIcon: Icons.date_range,
                 keyboardType: TextInputType.datetime,
-                readOnly: true,
-                onTap: () => _selectDate(context, _admissionTrimesterController),
+                enabled: true,
               ),
               const SizedBox(height: 20),
             ],
-            
+
+            if (isProfessor) ...[
+              const Text(
+                'Información de Profesor',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF003087),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              DropdownButtonFormField<int>(
+                decoration: InputDecoration(
+                  labelText: 'Facultad',
+                  prefixIcon: const Icon(Icons.account_balance),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+                value: _selectedFacultyId,
+                items: _faculties.map((fac) {
+                  return DropdownMenuItem<int>(
+                    value: fac.idFaculty,
+                    child: Text(fac.name),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedFacultyId = newValue;
+                    if (_selectedDepartmentId != null) {
+                      final dept = _departments.firstWhereOrNull(
+                        (d) => d.idDepartment == _selectedDepartmentId,
+                      );
+                      if (dept == null || dept.idFaculty != newValue) {
+                        _selectedDepartmentId = null;
+                      }
+                    }
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona una facultad';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+              DropdownButtonFormField<int>(
+                decoration: InputDecoration(
+                  labelText: 'Departamento',
+                  prefixIcon: const Icon(Icons.apartment),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                ),
+                value: _selectedDepartmentId,
+                items: _departments
+                    .where((dept) => _selectedFacultyId == null || dept.idFaculty == _selectedFacultyId)
+                    .map((dept) {
+                  return DropdownMenuItem<int>(
+                    value: dept.idDepartment,
+                    child: Text(dept.dptName),
+                  );
+                }).toList(),
+                onChanged: (int? newValue) {
+                  setState(() {
+                    _selectedDepartmentId = newValue;
+                    final dept = _departments.firstWhereOrNull((d) => d.idDepartment == newValue);
+                    if (dept != null) {
+                      _selectedFacultyId = dept.idFaculty;
+                    }
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Por favor selecciona un departamento';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+              CustomTextField(
+                controller: _hireDateProfessorController,
+                labelText: 'Fecha de Contratación (YYYY-MM-DD)',
+                prefixIcon: Icons.date_range,
+                readOnly: true,
+                onTap: () => _selectDate(context, _hireDateProfessorController),
+              ),
+              const SizedBox(height: 20),
+            ],
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
