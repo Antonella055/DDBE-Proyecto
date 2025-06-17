@@ -1,3 +1,6 @@
+
+import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
+import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,7 +13,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/news_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
-
+import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_student.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,20 +28,17 @@ Future<void> main() async {
     );
   }
 
-  // Inicialización de Supabase
+  // Inicialización de Supabase sin dotenv
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ! ,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] !,
-  );
-
-  runApp(const MyApp());
+    url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
+  ); runApp(const MyApp());
 }
 
 // Solo una vez, después de inicializar Supabase
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatefulWidget {
-
   const MyApp({super.key});
 
   @override
@@ -64,8 +64,8 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         fontFamily: 'Arial',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFF57C00),
-          primary: const Color(0xFF673AB7),
+          seedColor: const Color(0xFFF57C00), // Naranja corporativo (tu color)
+          primary: const Color(0xFFF57C00),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -94,6 +94,15 @@ class _MyAppState extends State<MyApp> {
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
         '/postulation': (context) => const AyudantiaPage(),
+        '/create-student': (context) => const AdminCreateStudent(),
+        '/create-professor': (context) => const AdminCreateProfessor(),
+
+        '/reset-password': (context) {
+          final uri = Uri.base;
+          final codeFromUrl = uri.queryParameters['code'];
+          return ResetPasswordPage(code: codeFromUrl); // Pasa el código si está presente
+        
+        },
       },
     );
   }
@@ -104,10 +113,9 @@ extension ContextExtension on BuildContext {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError
-                ? const Color.fromARGB(255, 211, 47, 47)
-                : const Color.fromARGB(255, 76, 175, 80),
+        backgroundColor: isError
+            ? const Color.fromARGB(255, 211, 47, 47)
+            : const Color.fromARGB(255, 76, 175, 80),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
