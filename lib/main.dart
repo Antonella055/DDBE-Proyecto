@@ -1,4 +1,5 @@
 
+import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -94,6 +95,8 @@ class _MyAppState extends State<MyApp> {
         '/contact': (context) => const ContactScreen(),
         '/postulation': (context) => const AyudantiaPage(),
         '/create-student': (context) => const AdminCreateStudent(),
+        '/create-professor': (context) => const AdminCreateProfessor(),
+
         '/reset-password': (context) {
           final uri = Uri.base;
           final codeFromUrl = uri.queryParameters['code'];
