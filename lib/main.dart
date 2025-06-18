@@ -10,6 +10,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/news_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/chat_page.dart';
 
 
 Future<void> main() async {
@@ -27,8 +28,8 @@ Future<void> main() async {
 
   // Inicialización de Supabase
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ! ,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] !,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(const MyApp());
@@ -38,7 +39,6 @@ Future<void> main() async {
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatefulWidget {
-
   const MyApp({super.key});
 
   @override
@@ -94,6 +94,7 @@ class _MyAppState extends State<MyApp> {
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
         '/postulation': (context) => const AyudantiaPage(),
+        '/chat': (context) => const ChatPage(), // <--- NUEVA RUTA PARA LA PÁGINA DE CHAT CON APPBAR Y FOOTER
       },
     );
   }
