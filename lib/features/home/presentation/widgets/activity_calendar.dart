@@ -50,6 +50,8 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
 
   String formatHora(dynamic hora) {
     if (hora == null) return '';
+    // Asegúrate de que la hora es una cadena y tiene el formato esperado (ej. "HH:mm:ss")
+    // Si la hora viene de Supabase como un tipo 'time' sin segundos, ajusta según sea necesario.
     return hora.toString().substring(0, 5); // HH:mm
   }
 
@@ -201,55 +203,61 @@ class _ActivityCalendarState extends State<ActivityCalendar> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Aquí se muestran las actividades del día seleccionado
               if (_selectedDay != null)
-                ...(_activities[DateTime(
-                          _selectedDay!.year,
-                          _selectedDay!.month,
-                          _selectedDay!.day,
-                        )] ??
-                        [])
-                    .map(
-                      (activity) => ListTile(
-                        leading: const Icon(Icons.event),
-                        title: Text(activity['evento'] ?? ''),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (activity['descripcion'] != null)
-                              Text('Descripción: ${activity['descripcion']}'),
-                            if (activity['lugar'] != null)
-                              Text('Lugar: ${activity['lugar']}'),
-                            if (activity['hora'] != null)
-                              Text('Hora: ${formatHora(activity['hora'])}'),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () async {
-                                await _showEditDialog(activity);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await _supabaseService.deleteActivity(
-                                  activity['id'],
-                                );
-                                await _loadActivities();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Evento eliminado'),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                Expanded( // Añadido Expanded para que la lista de actividades ocupe el espacio restante
+                  child: ListView( // Cambiado a ListView para manejar el desbordamiento si hay muchas actividades
+                    children: (_activities[DateTime(
+                                  _selectedDay!.year,
+                                  _selectedDay!.month,
+                                  _selectedDay!.day,
+                                )] ??
+                                [])
+                            .map(
+                              (activity) => ListTile(
+                                leading: const Icon(Icons.event),
+                                title: Text(activity['evento'] ?? ''),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (activity['descripcion'] != null)
+                                      Text('Descripción: ${activity['descripcion']}'),
+                                    if (activity['lugar'] != null)
+                                      Text('Lugar: ${activity['lugar']}'),
+                                    if (activity['hora'] != null)
+                                      Text('Hora: ${formatHora(activity['hora'])}'),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.blue),
+                                      onPressed: () async {
+                                        await _showEditDialog(activity);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () async {
+                                        await _supabaseService.deleteActivity(
+                                          activity['id'],
+                                        );
+                                        await _loadActivities();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Evento eliminado'),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(), // Convertir el iterable a una lista de widgets
+                  ),
+                ),
             ],
           ),
         ),

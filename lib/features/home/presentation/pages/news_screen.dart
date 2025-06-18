@@ -48,11 +48,11 @@ class _NewsScreenState extends State<NewsScreen> {
       );
 
   Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
-  
+   
   // Modificado para que el color de la AppBar sea fijo o basado en highContrast
   Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
   // Modificado para que el color del texto de los enlaces se adapte al modo oscuro
-  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue; 
+  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue;  
 
   void _onProfileIconPressed() {
     if (_supabaseClient.auth.currentUser == null) {
@@ -184,7 +184,7 @@ class _NewsScreenState extends State<NewsScreen> {
           setState(() {
             _darkMode = value;
             // Opcional: si _darkMode afecta _lightBackground
-            _lightBackground = !value; 
+            _lightBackground = !value;  
           });
         },
         onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
