@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
-import 'package:ayudantia_software/services/chat_service.dart'; // <--- Make sure this import is here
+import 'package:ayudantia_software/services/chat_service.dart';
 import 'dart:developer' as developer;
+
+// Definición de colores del manual de marca
+const Color kOrangeColor = Color(0xFFFF8200);
+const Color kLightGrayColor = Color(0xFFD9D9D6);
+const Color kDarkBlueColor = Color(0xFF003087);
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  final Color linkTextColor;
+  final String currentRoute; // Añadimos esta propiedad para saber la ruta actual
   final VoidCallback? onProfileIconPressed;
 
   const CustomAppBar({
     super.key,
     required this.scaffoldKey,
-    required this.linkTextColor,
+    required this.currentRoute, // Ahora es un parámetro requerido
     this.onProfileIconPressed,
   });
 
-  // Hacemos las instancias de SupabaseService y ChatService estáticas
   static final SupabaseService _supabaseService = SupabaseService();
-  static final ChatService _chatService = ChatService(); // <--- This line is new/modified
+  static final ChatService _chatService = ChatService();
 
   void _showLoginRequiredDialog(BuildContext context) {
     showDialog(
@@ -43,7 +47,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  // New method to handle the chat button press
   Future<void> _handleChatButtonPress(BuildContext context) async {
     final user = Supabase.instance.client.auth.currentUser;
 
@@ -51,29 +54,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       _showLoginRequiredDialog(context);
     } else {
       try {
-        final chats = await _chatService.getUserChats(); // Attempt to get chats
+        final chats = await _chatService.getUserChats();
 
         if (chats.isEmpty) {
-          // If no chats, show a SnackBar
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No tienes chats disponibles.', style: TextStyle(color: Colors.white)),
+              content: Text('No tienes chats disponibles.',
+                  style: TextStyle(color: Colors.white)),
               backgroundColor: Colors.red,
-              duration: Duration(seconds: 2), // Duration of the message
+              duration: Duration(seconds: 2),
             ),
           );
-          developer.log('User logged in but no chats available.', name: 'CustomAppBar');
+          developer.log('User logged in but no chats available.',
+              name: 'CustomAppBar');
         } else {
-          // If chats exist, navigate to the chat page
-          developer.log('Chats available. Navigating to /chat', name: 'CustomAppBar');
+          developer.log('Chats available. Navigating to /chat',
+              name: 'CustomAppBar');
           Navigator.of(context).pushNamed('/chat');
         }
       } catch (e) {
-        // Handle any errors when loading chats
         developer.log('Error getting chats: $e', name: 'CustomAppBarError');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cargar chats: $e', style: const TextStyle(color: Colors.white)),
+            content: Text('Error al cargar chats: $e',
+                style: const TextStyle(color: Colors.white)),
             backgroundColor: Colors.red,
           ),
         );
@@ -86,9 +90,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     bool isLargeScreen = MediaQuery.of(context).size.width > 600;
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: const Border(
+        border: Border(
           bottom: BorderSide(color: Colors.grey, width: 0.5),
         ),
       ),
@@ -96,19 +100,24 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Image.network(
-                CustomAppBar._supabaseService.getPublicImageUrl('images', 'upload/logo.png'),
-                height: 60,
-                errorBuilder: (context, error, stackTrace) {
-                  developer.log('Error loading logo.png: $error', name: 'CustomAppBar');
-                  return const Text('Error loading logo.png', style: TextStyle(color: Colors.red));
-                },
-              ),
-              const SizedBox(width: 12),
-            ],
+          // Logo de la universidad
+          GestureDetector(
+            onTap: () {
+              // Al presionar el logo, navega al home
+              Navigator.of(context).pushNamed('/home');
+            },
+            child: Image.network(
+              CustomAppBar._supabaseService.getPublicImageUrl('images', 'upload/logo.png'),
+              height: 40, // Logo más pequeño
+              errorBuilder: (context, error, stackTrace) {
+                developer.log('Error loading logo.png: $error',
+                    name: 'CustomAppBar');
+                return const Text('Error loading logo.png',
+                    style: TextStyle(color: Colors.red));
+              },
+            ),
           ),
+          const SizedBox(width: 12),
 
           if (isLargeScreen)
             Expanded(
@@ -116,12 +125,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildAppBarMenuItem(context, 'DDBE', Colors.orange, route: '/home'),
-                    _buildAppBarMenuItem(context, 'Noticias', Colors.black87, route: '/news'),
-                    _buildAppBarMenuItem(context, 'Cronograma', Colors.black87, route: '/calendar'),
-                    _buildAppBarMenuItem(context, 'Postúlate', Colors.black87, route: '/postulation'),
-                    _buildAppBarMenuItem(context, 'Contacto', Colors.black87, route: '/contact'),
-                    _buildAppBarMenuItem(context, 'Más', Colors.black87, hasDropdown: true, route: '/more'),
+                    _buildAppBarMenuItem(context, 'DDBE', '/home'),
+                    _buildAppBarMenuItem(context, 'Noticias', '/news'),
+                    _buildAppBarMenuItem(context, 'Cronograma', '/calendar'),
+                    _buildAppBarMenuItem(context, 'Postúlate', '/postulation'),
+                    _buildAppBarMenuItem(context, 'Contacto', '/contact'),
+                    _buildAppBarMenuItem(context, 'Más', '/more',
+                        hasDropdown: true),
                   ],
                 ),
               ),
@@ -135,12 +145,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   developer.log(
                     'Icono de notificaciones presionado',
                     name: 'CustomAppBar',
-                  ); // Usando developer.log
+                  );
                 },
               ),
               IconButton(
                 icon: Icon(Icons.message, color: Colors.grey[700]),
-                onPressed: () => _handleChatButtonPress(context), // <--- This line is modified
+                onPressed: () => _handleChatButtonPress(context),
               ),
               if (onProfileIconPressed != null)
                 IconButton(
@@ -153,12 +163,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   developer.log(
                     'Icono de búsqueda presionado',
                     name: 'CustomAppBar',
-                  ); // Usando developer.log
+                  );
                 },
               ),
               if (!isLargeScreen)
                 IconButton(
-                  icon: Icon(Icons.menu, color: linkTextColor),
+                  icon: Icon(Icons.menu, color:const Color.fromARGB(255, 59, 59, 59)), // Color de menú del manual de marca
                   onPressed: () => scaffoldKey.currentState?.openEndDrawer(),
                 ),
             ],
@@ -169,24 +179,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(80.0);
+  Size get preferredSize => const Size.fromHeight(60.0); // AppBar más finito, de 60.0
 
-  Widget _buildAppBarMenuItem(BuildContext context, String text, Color color, {bool hasDropdown = false, String? route}) {
+  Widget _buildAppBarMenuItem(BuildContext context, String text, String route,
+      {bool hasDropdown = false}) {
+    // Determina si esta es la ruta actual para aplicar el color naranja
+    final bool isCurrentRoute = (currentRoute == route);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: InkWell(
         onTap: () {
           developer.log('You pressed: $text', name: 'CustomAppBar');
-          if (route != null) {
-            Navigator.of(context).pushNamed(route);
-          }
+          Navigator.of(context).pushNamed(route);
         },
         child: Text(
           text,
           style: TextStyle(
-            color: color,
+            color: isCurrentRoute ? kOrangeColor :const Color.fromARGB(255, 59, 59, 59), // Color dinámico
             fontWeight: FontWeight.w500,
             fontSize: 16,
+            fontFamily:
+                'Roboto', // Aplicamos la tipografía Roboto para los ítems
           ),
         ),
       ),

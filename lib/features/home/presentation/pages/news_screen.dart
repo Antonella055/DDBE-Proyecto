@@ -6,7 +6,7 @@ import 'package:ayudantia_software/main.dart';
 import 'package:ayudantia_software/features/home/presentation/widgets/custom_appbar.dart';
 import 'package:ayudantia_software/features/home/presentation/widgets/custom_footer.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
-import 'package:ayudantia_software/features/home/presentation/widgets/accesibility_drawer.dart'; // Corregido el nombre del archivo si es 'accesibility'
+import 'package:ayudantia_software/features/home/presentation/widgets/accesibility_drawer.dart';
 import 'package:ayudantia_software/features/home/data/news_model.dart'; // Importa el modelo de noticia
 
 class NewsScreen extends StatefulWidget {
@@ -40,19 +40,23 @@ class _NewsScreenState extends State<NewsScreen> {
     _newsArticlesFuture = _supabaseService.fetchNewsArticles();
   }
 
+  // Estilos de texto adaptables
   TextStyle get _textStyle => TextStyle(
         fontSize: _fontSize,
-        fontFamily: _readableFont ? 'Arial' : 'Roboto',
+        fontFamily: _readableFont ? 'Roboto' : 'Roboto', // Ajustado a Roboto o Roboto Condensed
         color: _darkMode ? Colors.white : Colors.black,
-        decoration: _underlineLinks ? TextDecoration.underline : TextDecoration.none,
+        decoration:
+            _underlineLinks ? TextDecoration.underline : TextDecoration.none,
       );
 
   Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
-   
+
   // Modificado para que el color de la AppBar sea fijo o basado en highContrast
-  Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
+  Color get _appBarColor =>
+      _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
   // Modificado para que el color del texto de los enlaces se adapte al modo oscuro
-  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue;  
+  Color get _linkTextColor =>
+      _darkMode ? Colors.white : Colors.blue; // Se mantiene para el Drawer si es necesario
 
   void _onProfileIconPressed() {
     if (_supabaseClient.auth.currentUser == null) {
@@ -85,7 +89,7 @@ class _NewsScreenState extends State<NewsScreen> {
       key: _scaffoldKey,
       appBar: CustomAppBar(
         scaffoldKey: _scaffoldKey,
-        linkTextColor: _linkTextColor,
+        currentRoute: '/news', // ¡Aquí se pasa la ruta actual, que es '/news'!
         onProfileIconPressed: _onProfileIconPressed,
       ),
       body: Container(
@@ -101,7 +105,10 @@ class _NewsScreenState extends State<NewsScreen> {
                   style: _textStyle.copyWith(
                     fontSize: _fontSize + 12,
                     fontWeight: FontWeight.bold,
-                    color: _darkMode ? Colors.white : Colors.black87, // Color del título adaptable al modo oscuro
+                    color: _darkMode
+                        ? Colors.white
+                        : Colors
+                            .black87, // Color del título adaptable al modo oscuro
                   ),
                 ),
               ),
@@ -130,7 +137,8 @@ class _NewsScreenState extends State<NewsScreen> {
                           ? GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 3, // 3 columnas para pantallas grandes
                                 crossAxisSpacing: 24.0,
                                 mainAxisSpacing: 24.0,
@@ -159,7 +167,8 @@ class _NewsScreenState extends State<NewsScreen> {
               const SizedBox(height: 32.0),
               CustomFooter(
                 textColor: _darkMode ? Colors.white : Colors.black,
-                backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                backgroundColor:
+                    _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
               ),
             ],
           ),
@@ -172,7 +181,7 @@ class _NewsScreenState extends State<NewsScreen> {
         darkMode: _darkMode, // Mantener si controla el tema general
         underlineLinks: _underlineLinks,
         readableFont: _readableFont,
-        
+
         // ¡Pasar los nuevos estados!
         grayscale: _grayscale,
         negativeContrast: _negativeContrast,
@@ -184,12 +193,14 @@ class _NewsScreenState extends State<NewsScreen> {
           setState(() {
             _darkMode = value;
             // Opcional: si _darkMode afecta _lightBackground
-            _lightBackground = !value;  
+            _lightBackground = !value;
           });
         },
-        onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
-        onReadableFontChanged: (value) => setState(() => _readableFont = value),
-        
+        onUnderlineLinksChanged: (value) =>
+            setState(() => _underlineLinks = value),
+        onReadableFontChanged: (value) =>
+            setState(() => _readableFont = value),
+
         // ¡Pasar los nuevos callbacks!
         onGrayscaleChanged: (value) {
           setState(() {
@@ -210,10 +221,11 @@ class _NewsScreenState extends State<NewsScreen> {
             _darkMode = !value;
           });
         },
-        
+
         onReset: _resetAccessibilitySettings, // Usar el método actualizado
         appBarColor: _appBarColor, // Pasar el color de la AppBar (del getter)
-        linkTextColor: _linkTextColor, // Pasar el color de los enlaces (del getter)
+        linkTextColor:
+            _linkTextColor, // Pasar el color de los enlaces (del getter)
       ),
     );
   }
@@ -234,39 +246,53 @@ class _NewsScreenState extends State<NewsScreen> {
                     fit: BoxFit.cover,
                     height: 180,
                     width: double.infinity,
-                    loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                    loadingBuilder: (BuildContext context, Widget child,
+                        ImageChunkEvent? loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
                         height: 180,
                         width: double.infinity,
-                        color: _darkMode ? Colors.grey[600] : Colors.grey[200], // Fondo mientras carga adaptable
+                        color: _darkMode
+                            ? Colors.grey[600]
+                            : Colors
+                                .grey[200], // Fondo mientras carga adaptable
                         child: Center(
                           child: CircularProgressIndicator(
                             value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
                                 : null,
-                            valueColor: AlwaysStoppedAnimation<Color>(_appBarColor), // Color del indicador adaptable
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                _appBarColor), // Color del indicador adaptable
                           ),
                         ),
                       );
                     },
                     errorBuilder: (context, error, stackTrace) {
-                      final imageUrlToLoad = _supabaseService.getPublicImageUrl('images', article.imageUrl!);
-                      print('DEBUG: Error en Image.network para URL: $imageUrlToLoad');
-                      print('DEBUG: Tipo de Error: ${error.runtimeType}');
-                      print('DEBUG: Mensaje de Error: $error');
-                      print('DEBUG: Stack Trace: $stackTrace');
+                      final imageUrlToLoad =
+                          _supabaseService.getPublicImageUrl('images', article.imageUrl!);
+                      debugPrint('DEBUG: Error en Image.network para URL: $imageUrlToLoad');
+                      debugPrint('DEBUG: Tipo de Error: ${error.runtimeType}');
+                      debugPrint('DEBUG: Mensaje de Error: $error');
+                      debugPrint('DEBUG: Stack Trace: $stackTrace');
 
                       return Container(
                         height: 180,
-                        color: _darkMode ? Colors.grey[600] : Colors.grey[300], // Color de error adaptable
+                        color: _darkMode
+                            ? Colors.grey[600]
+                            : Colors
+                                .grey[300], // Color de error adaptable
                         child: Center(
                           child: Text(
                             'Error al cargar imagen o no disponible: \n${imageUrlToLoad}\nError: $error',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: _darkMode ? Colors.redAccent : Colors.red, // Color del texto de error adaptable
-                              fontSize: 10
-                            ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: _darkMode
+                                          ? Colors.redAccent
+                                          : Colors
+                                              .red, // Color del texto de error adaptable
+                                      fontSize: 10,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -276,11 +302,16 @@ class _NewsScreenState extends State<NewsScreen> {
                 : Container(
                     height: 180,
                     width: double.infinity,
-                    color: _darkMode ? Colors.grey[600] : Colors.grey[400], // Placeholder adaptable
+                    color: _darkMode
+                        ? Colors.grey[600]
+                        : Colors.grey[400], // Placeholder adaptable
                     child: Center(
                       child: Text(
                         'Imagen no disponible',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.white),
                       ),
                     ),
                   ),
@@ -295,7 +326,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   style: _textStyle.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: _fontSize + 2,
-                    color: _darkMode ? Colors.white : Colors.black87, // Color del título adaptable
+                    color: _darkMode
+                        ? Colors.white
+                        : Colors.black87, // Color del título adaptable
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -305,7 +338,9 @@ class _NewsScreenState extends State<NewsScreen> {
                   article.description,
                   style: _textStyle.copyWith(
                     fontSize: _fontSize,
-                    color: _darkMode ? Colors.white70 : Colors.black87, // Color de descripción adaptable
+                    color: _darkMode
+                        ? Colors.white70
+                        : Colors.black87, // Color de descripción adaptable
                   ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
@@ -320,9 +355,8 @@ class _NewsScreenState extends State<NewsScreen> {
                     child: Text(
                       'Leer más',
                       style: _textStyle.copyWith(
-                        color: _linkTextColor, // Usar el color del enlace adaptable
-                        fontWeight: FontWeight.bold
-                      ),
+                          color: kDarkBlueColor, // Usar el color del enlace adaptable
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),

@@ -28,9 +28,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final SupabaseClient _supabaseClient = supabase; // Instancia de Supabase
 
-  // Getter para el color del texto de los enlaces de la AppBar
-  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue;
-
   // Getter para el color de fondo de la pantalla
   Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
 
@@ -68,7 +65,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       key: _scaffoldKey,
       appBar: CustomAppBar(
         scaffoldKey: _scaffoldKey,
-        linkTextColor: _linkTextColor,
+        currentRoute: '/calendar', // ¡Aquí se pasa la ruta actual!
         onProfileIconPressed: _onProfileIconPressed,
       ),
       body: Container(
@@ -142,7 +139,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         },
         onReset: _resetAccessibilitySettings,
         appBarColor: _appBarColor,
-        linkTextColor: _linkTextColor,
+        linkTextColor: _darkMode ? Colors.white : Colors.blue, // Asegúrate de que este color se mantenga si es necesario para el Drawer
       ),
     );
   }

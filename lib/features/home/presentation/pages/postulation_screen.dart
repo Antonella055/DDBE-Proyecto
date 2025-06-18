@@ -26,15 +26,17 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
     );
 
     final Uri url = Uri.parse(pdfUrl);
-    print('Attempting to launch PDF URL: $pdfUrl'); // Debugging print
+    debugPrint('Attempting to launch PDF URL: $pdfUrl'); // Debugging print
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
       // It's good practice to show an error to the user.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo abrir el PDF: $pdfUrl')),
-      );
+      if (mounted) { // Ensure the widget is still in the tree before showing a SnackBar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo abrir el PDF: $pdfUrl')),
+        );
+      }
     }
   }
 
@@ -54,13 +56,13 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
       'images', // Your bucket name for images
       'upload/imagen4.png', // The path within the images bucket
     );
-    print('Generated Image URL: $imageUrl'); // Print the image URL to console
+    debugPrint('Generated Image URL: $imageUrl'); // Print the image URL to console
 
     return Scaffold(
       key: _scaffoldKey, // Assign the scaffold key
       appBar: CustomAppBar(
         scaffoldKey: _scaffoldKey, // Pass the scaffold key
-        linkTextColor: Colors.white, // Or your preferred color
+        currentRoute: '/ayudantia', // ¡Aquí se pasa la ruta actual, que es '/ayudantia'!
         onProfileIconPressed: _onProfileIconPressed, // Pass the callback
         // No es necesario pasar hasDropdown para "Más" si ya no tiene dropdown
       ),
