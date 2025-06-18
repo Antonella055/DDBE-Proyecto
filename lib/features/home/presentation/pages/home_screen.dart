@@ -35,14 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
   // Estilos de texto adaptables
   TextStyle get _textStyle => TextStyle(
         fontSize: _fontSize,
-        fontFamily: _readableFont ? 'Arial' : 'Roboto',
+        fontFamily: _readableFont ? 'Roboto' : 'Roboto', // Ajustado a Roboto o Roboto Condensed
         color: _darkMode ? Colors.white : Colors.black, // Color adaptable al modo oscuro
-        decoration: _underlineLinks ? TextDecoration.underline : TextDecoration.none,
+        decoration:
+            _underlineLinks ? TextDecoration.underline : TextDecoration.none,
       );
 
   Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
-  Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
-  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue; // Color adaptable al modo oscuro
+  Color get _appBarColor =>
+      _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
+  // Eliminamos _linkTextColor para el AppBar ya que ahora usa currentRoute
+  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue; // Se mantiene para el Drawer si es necesario
 
   // Método para manejar la acción del icono de perfil
   void _onProfileIconPressed() {
@@ -76,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       key: _scaffoldKey,
       appBar: CustomAppBar(
         scaffoldKey: _scaffoldKey,
-        linkTextColor: _linkTextColor,
+        currentRoute: '/', // ¡Aquí se pasa la ruta actual, que es la raíz para HomeScreen!
         onProfileIconPressed: _onProfileIconPressed,
       ),
       body: Container(
@@ -87,7 +90,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Sección principal con márgenes aumentados
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -107,8 +111,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: IconButton(
-                                  icon: Icon(Icons.accessibility_new, color: _linkTextColor, size: 30), // Color adaptable
-                                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                                  icon: Icon(Icons.accessibility_new,
+                                      color: _linkTextColor,
+                                      size: 30), // Color adaptable
+                                  onPressed: () =>
+                                      _scaffoldKey.currentState?.openEndDrawer(),
                                 ),
                               ),
                             ),
@@ -118,7 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: _textStyle.copyWith(
                               fontSize: _fontSize + 20,
                               fontWeight: FontWeight.w600,
-                              color: _darkMode ? Colors.white : Colors.black87, // Color adaptable
+                              color: _darkMode
+                                  ? Colors.white
+                                  : Colors.black87, // Color adaptable
                               height: 1.2,
                             ),
                           ),
@@ -128,7 +137,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: _textStyle.copyWith(
                               fontSize: _fontSize + 4,
                               fontWeight: FontWeight.w500,
-                              color: _darkMode ? Colors.grey[400] : Colors.grey[700], // Color adaptable
+                              color: _darkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[700], // Color adaptable
                             ),
                           ),
                         ],
@@ -140,31 +151,46 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen1.jpg'),
+                          _supabaseService.getPublicImageUrl(
+                              'images', 'upload/imagen1.jpg'),
                           fit: BoxFit.cover,
                           height: 200,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: _darkMode ? Colors.grey[600] : Colors.grey[300], // Color de error adaptable
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            height: 200, // Asegura una altura para el contenedor de error
+                            color: _darkMode
+                                ? Colors.grey[600]
+                                : Colors
+                                    .grey[300], // Color de error adaptable
                             child: Center(
                               child: Text(
                                 'Error al cargar imagen1.jpg',
-                                style: _textStyle.copyWith(color: _darkMode ? Colors.redAccent : Colors.red), // Color adaptable
+                                style: _textStyle.copyWith(
+                                    color: _darkMode
+                                        ? Colors.redAccent
+                                        : Colors.red), // Color adaptable
                                 textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          loadingBuilder: (BuildContext context, Widget child,
+                              ImageChunkEvent? loadingProgress) {
                             if (loadingProgress == null) return child;
                             return Container(
-                              height: 200,
-                              color: _darkMode ? Colors.grey[700] : Colors.grey[200], // Fondo mientras carga adaptable
+                              height: 200, // Asegura una altura para el contenedor de carga
+                              color: _darkMode
+                                  ? Colors.grey[700]
+                                  : Colors
+                                      .grey[200], // Fondo mientras carga adaptable
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
                                       : null,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_appBarColor), // Color del indicador adaptable
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      _appBarColor), // Color del indicador adaptable
                                 ),
                               ),
                             );
@@ -178,7 +204,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Sección de "Dependencia adscrita"
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -187,30 +214,47 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen2.jpg'),
+                          _supabaseService.getPublicImageUrl(
+                              'images', 'upload/imagen2.jpg'),
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200, // Asegura una altura para el contenedor de error
-                            color: _darkMode ? Colors.grey[600] : Colors.grey[300], // Color de error adaptable
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                            height:
+                                200, // Asegura una altura para el contenedor de error
+                            color: _darkMode
+                                ? Colors.grey[600]
+                                : Colors
+                                    .grey[300], // Color de error adaptable
                             child: Center(
                               child: Text(
                                 'Error al cargar imagen2.jpg',
-                                style: _textStyle.copyWith(color: _darkMode ? Colors.redAccent : Colors.red), // Color adaptable
+                                style: _textStyle.copyWith(
+                                    color: _darkMode
+                                        ? Colors.redAccent
+                                        : Colors.red), // Color adaptable
                                 textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          loadingBuilder: (BuildContext context, Widget child,
+                              ImageChunkEvent? loadingProgress) {
                             if (loadingProgress == null) return child;
                             return Container(
-                              height: 200, // Asegura una altura para el contenedor de carga
-                              color: _darkMode ? Colors.grey[700] : Colors.grey[200], // Fondo mientras carga adaptable
+                              height:
+                                  200, // Asegura una altura para el contenedor de carga
+                              color: _darkMode
+                                  ? Colors.grey[700]
+                                  : Colors
+                                      .grey[200], // Fondo mientras carga adaptable
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  value: loadingProgress.expectedTotalBytes !=
+                                          null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
                                       : null,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_appBarColor), // Color del indicador adaptable
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      _appBarColor), // Color del indicador adaptable
                                 ),
                               ),
                             );
@@ -224,7 +268,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Dependencia adscrita al Decanato de Estudiantes'),
+                          _buildSectionTitle(
+                              'Dependencia adscrita al Decanato de Estudiantes'),
                           const SizedBox(height: 16),
                           _buildParagraph(
                               'La Dirección de Desarrollo y Bienestar Estudiantil (DDBE) tiene como función principal '
@@ -261,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
         darkMode: _darkMode,
         underlineLinks: _underlineLinks,
         readableFont: _readableFont,
-        
+
         // ¡Pasar los nuevos estados!
         grayscale: _grayscale,
         negativeContrast: _negativeContrast,
@@ -275,9 +320,11 @@ class _HomeScreenState extends State<HomeScreen> {
             _lightBackground = !value; // Sincroniza con el modo oscuro
           });
         },
-        onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
-        onReadableFontChanged: (value) => setState(() => _readableFont = value),
-        
+        onUnderlineLinksChanged: (value) =>
+            setState(() => _underlineLinks = value),
+        onReadableFontChanged: (value) =>
+            setState(() => _readableFont = value),
+
         // ¡Pasar los nuevos callbacks!
         onGrayscaleChanged: (value) {
           setState(() {
@@ -297,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _darkMode = !value; // Sincroniza con el modo oscuro
           });
         },
-        
+
         onReset: _resetAccessibilitySettings, // Usar el método actualizado
         appBarColor: _appBarColor, // Pasa el color de la AppBar (del getter)
         linkTextColor: _linkTextColor, // Pasa el color de los enlaces (del getter)
