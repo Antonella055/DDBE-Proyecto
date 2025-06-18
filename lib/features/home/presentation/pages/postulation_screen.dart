@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
@@ -63,6 +62,7 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
         scaffoldKey: _scaffoldKey, // Pass the scaffold key
         linkTextColor: Colors.white, // Or your preferred color
         onProfileIconPressed: _onProfileIconPressed, // Pass the callback
+        // No es necesario pasar hasDropdown para "Más" si ya no tiene dropdown
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -115,9 +115,6 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      // Implement your navigation logic here,
-                      // e.g., Navigator.of(context).pushNamed('/postular');
-                      // For now, it just shows a snackbar.
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Botón "Conocer más" presionado.'),
@@ -134,6 +131,39 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
                     ),
                     child: const Text('Conocer más'),
                   ),
+                  const SizedBox(height: 24), // Espacio antes del nuevo botón
+                  // --- Nuevo Botón de "Solicitar Ayuda" ---
+                  Center(
+                    // <-- Este widget centra su hijo horizontalmente
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Navegar a la pantalla de solicitud de ayuda
+                        Navigator.of(context).pushNamed('/help');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(
+                              context,
+                            ).primaryColor, // Usar el color primario del tema
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 30,
+                          vertical: 15,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Solicitar Ayuda',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // --- Fin Nuevo Botón ---
                 ],
               ),
             ),

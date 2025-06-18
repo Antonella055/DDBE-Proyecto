@@ -1,10 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart';
-import '/features/auth/presentation/widgets/custom_text_field.dart';
-import 'package:ayudantia_software/main.dart';
-
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,228 +9,259 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _passwordVisible = false;
-  bool _loading = false;
-  bool _redirecting = false;
-  late final StreamSubscription<AuthState> _authStateSubscription;
-
-
-  @override
-  void initState() {
-    super.initState();
-    
-
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen(
-      (data) {
-        if (_redirecting) return;
-        final session = data.session;
-        if (session != null) {
-          _redirecting = true;
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const ProfilePage()),
-            );
-          }
-        }
-      },
-      onError: (error) {
-        if (!mounted) return;
-        if (error is AuthException) {
-          context.showSnackBar(error.message, isError: true);
-        } else {
-          context.showSnackBar('Ocurrió un error inesperado', isError: true);
-        }
-      },
-    );
-  }
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
 
   Future<void> _login() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      if (mounted) {
-        context.showSnackBar("Por favor, ingresa tu correo y contraseña.", isError: true);
-      }
-      return;
-    }
-
     setState(() {
-      _loading = true;
+      _isLoading = true;
+      _errorMessage = null;
     });
-
     try {
-      print('DEBUG: Attempting to sign in with email: ${_emailController.text}');
-      final AuthResponse response = await supabase.auth.signInWithPassword(
+      final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
-
-      final User? user = response.user;
-
-      if (user != null) {
-        print('DEBUG: User successfully logged in: ${user.id}, Email: ${user.email}');
-
+      if (response.user != null) {
         if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const ProfilePage()),
-          );
+          Navigator.of(context).pushReplacementNamed('/home');
         }
       } else {
-        print('DEBUG: Login successful, but user object is null. This is unexpected.');
-        if (mounted) {
-          context.showSnackBar("Error desconocido al obtener el usuario después del inicio de sesión.", isError: true);
-        }
-      }
-
-    } on AuthException catch (error) {
-      print('ERROR: AuthException during login: ${error.message}');
-      if (mounted) {
-        context.showSnackBar(error.message, isError: true);
-      }
-    } catch (e) {
-      print('ERROR: General error during login: $e');
-      if (mounted) {
-        context.showSnackBar("Error al iniciar sesión: $e", isError: true);
-      }
-    } finally {
-      if (mounted) {
         setState(() {
-          _loading = false;
+          _errorMessage = 'Correo o contraseña incorrectos.';
         });
       }
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error inesperado: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void _togglePasswordVisibility() {
-    setState(() {
-      _passwordVisible = !_passwordVisible;
-    });
-  }
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _authStateSubscription.cancel();
-    super.dispose();
+  void _showResetPasswordEmailModal() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final _resetEmailController = TextEditingController();
+        return AlertDialog(
+          title: const Text('Restablecer contraseña'),
+          content: TextField(
+            controller: _resetEmailController,
+            decoration: const InputDecoration(
+              labelText: 'Correo electrónico',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await Supabase.instance.client.auth.resetPasswordForEmail(
+                    _resetEmailController.text.trim(),
+                  );
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Correo de restablecimiento enviado.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
+    const String backgroundUrl = 'https://lbxkcilriktsmfiruvfj.supabase.co/storage/v1/object/public/backgrounds/backgrounds/loginpage_background.jpg';
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          child: Container(
-            margin: const EdgeInsets.all(24.0),
-            constraints: BoxConstraints(
-              maxWidth: isMobile ? double.infinity : 500,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            backgroundUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey,
+              child: const Center(child: Icon(Icons.broken_image, size: 60)),
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 45,
-                  offset: const Offset(0, 20),
+          ),
+          Container(
+            color: Colors.black.withOpacity(0.2),
+          ),
+          // Botón de volver en la esquina superior izquierda
+          Positioned(
+            top: 24,
+            left: 24,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF003087), size: 32),
+              onPressed: () {
+                Navigator.of(context).maybePop();
+              },
+              tooltip: 'Volver',
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                margin: const EdgeInsets.all(24.0),
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? double.infinity : 500,
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Iniciar sesión',
-                    style: TextStyle(
-                      fontSize: isMobile ? 24 : 28,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
-                    ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.75), 
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: const Color.fromARGB(154, 0, 47, 135), 
+                    width: 2,
                   ),
-                  const SizedBox(height: 20),
-                  if (!isMobile)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.g_mobiledata,
-                              size: 40, color: Colors.red),
-                          onPressed: () {},
-                        ),
-                      ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 30,
+                      offset: const Offset(0, 12),
                     ),
-                  const SizedBox(height: 20),
-                  CustomTextField(
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Iniciar sesión',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: const Color(0xFFFF8000),
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Icon(Icons.g_mobiledata, color: Colors.red, size: 48),
+                    const SizedBox(height: 16),
+                    TextField(
                     controller: _emailController,
-                    labelText: 'Correo electrónico',
-                    prefixIcon: Icons.email,
                     keyboardType: TextInputType.emailAddress,
                     maxLength: 64,
-                  ),
-                  const SizedBox(height: 15),
-                  CustomTextField(
-                    controller: _passwordController,
-                    labelText: 'Contraseña',
-                    prefixIcon: Icons.lock,
-                    obscureText: !_passwordVisible,
-                    suffixIcon: IconButton(
-                      icon: Icon(_passwordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off),
-                      onPressed: _togglePasswordVisibility,
-                    ),
-                    maxLength: 40,
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {},
-                      child: const Text('¿Olvidaste tu contraseña?'),
+                    decoration: const InputDecoration(
+                      labelText: 'Correo electrónico',
+                      prefixIcon: Icon(Icons.email),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
+                        borderSide: BorderSide(color: Color(0xFF003087)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
+                        borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  SizedBox(
-                    width: isMobile ? double.infinity : null,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _login,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.0),
-                        ),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    maxLength: 40,
+                    decoration: const InputDecoration(
+                      labelText: 'Contraseña',
+                      prefixIcon: Icon(Icons.lock),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
                       ),
-                      child: _loading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Ingresar'),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
+                        borderSide: BorderSide(color: Color(0xFF003087)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30)), // <-- Circular
+                        borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
+                      ),
                     ),
                   ),
-                  if (isMobile)
-                    Column(
-                      children: [
-                        const SizedBox(height: 30),
-                        const Text('O inicia sesión con'),
-                        const SizedBox(height: 10),
-                        IconButton(
-                          icon: const Icon(Icons.g_mobiledata,
-                              size: 40, color: Colors.red),
-                          onPressed: () {},
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _showResetPasswordEmailModal,
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF003087),
                         ),
-                      ],
+                        child: const Text('¿Olvidaste tu contraseña?'),
+                      ),
                     ),
-                ],
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF8000),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Ingresar'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

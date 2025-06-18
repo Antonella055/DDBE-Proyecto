@@ -89,10 +89,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(
-          bottom: BorderSide(
-            color: Colors.grey,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Colors.grey, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -135,7 +132,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               IconButton(
                 icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Notifications icon pressed', name: 'CustomAppBar');
+                  developer.log(
+                    'Icono de notificaciones presionado',
+                    name: 'CustomAppBar',
+                  ); // Usando developer.log
                 },
               ),
               IconButton(
@@ -150,7 +150,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               IconButton(
                 icon: Icon(Icons.search, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Search icon pressed', name: 'CustomAppBar');
+                  developer.log(
+                    'Icono de búsqueda presionado',
+                    name: 'CustomAppBar',
+                  ); // Usando developer.log
                 },
               ),
               if (!isLargeScreen)
@@ -178,18 +181,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             Navigator.of(context).pushNamed(route);
           }
         },
-        child: Row(
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-              ),
-            ),
-            if (hasDropdown) const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
-          ],
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w500,
+            fontSize: 16,
+          ),
         ),
       ),
     );

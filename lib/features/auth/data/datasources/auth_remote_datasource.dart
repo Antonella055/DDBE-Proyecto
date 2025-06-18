@@ -1,3 +1,4 @@
+import 'package:ayudantia_software/features/auth/data/models/admin_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/assistance_type_model.dart';
 import 'package:ayudantia_software/features/auth/data/models/professor_profile_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -11,6 +12,7 @@ abstract class AuthRemoteDataSource {
   Future<void> createUserProfile(UserProfileModel profile);
   Future<void> updateUserProfile(UserProfileModel profile);
 
+  //tipos de usuario
   Future<ProfessorProfileModel?> getProfessorProfile(String userId);
   Future<void> createProfessorProfile(ProfessorProfileModel profile);
   Future<void> updateProfessorProfile(ProfessorProfileModel profile);
@@ -18,6 +20,10 @@ abstract class AuthRemoteDataSource {
   Future<StudentProfileModel?> getStudentProfile(String userId);
   Future<void> createStudentProfile(StudentProfileModel studentProfile);
   Future<void> updateStudentProfile(StudentProfileModel studentProfile);
+
+  Future<AdminModel?> getAdmin(String adminId);
+  Future<void> createAdmin(AdminModel admin);
+  Future<void> updateAdmin(AdminModel admin);
 
   Future<List<CareerModel>> getCareers({int? facultyId});
   Future<List<AssistanceTypeModel>> getAssistanceTypes();
@@ -237,49 +243,97 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
   
   @override
-  Future<void> createProfessorProfile(ProfessorProfileModel profile) async {
-    try {
-      await supabaseClient
-          .from('professors')
-          .insert(profile.toJson());
-    } on PostgrestException catch (e) {
-      throw ServerException(message: e.message);
-    } catch (e) {
-      throw ServerException(message: 'Error al crear el perfil de profesor: $e');
-    }
-  }
-  
-  @override
-  Future<ProfessorProfileModel?> getProfessorProfile(String userId) async {
-    try {
-      final data = await supabaseClient
-          .from('professors')
-          .select()
-          .eq('ID', userId)
-          .single();
-
-      return ProfessorProfileModel.fromJson(data);
-    } on PostgrestException catch (e) {
-      if (e.code == 'PGRST116') {
-        return null;
+    Future<void> createProfessorProfile(ProfessorProfileModel profile) async {
+      try {
+        await supabaseClient
+            .from('professors')
+            .insert(profile.toJson());
+      } on PostgrestException catch (e) {
+        throw ServerException(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al crear el perfil de profesor: $e');
       }
-      throw ServerException(message: 'Error inesperado al obtener perfil de profesor: ${e.message}');
-    } catch (e) {
-      throw ServerException(message: 'Error inesperado al obtener perfil de profesor: $e');
     }
-  }
   
   @override
-  Future<void> updateProfessorProfile(ProfessorProfileModel profile) async {
-    try {
-      await supabaseClient
-          .from('professors')
-          .update(profile.toJson())
-          .eq('ID', profile.id);
-    } on PostgrestException catch (e) {
-      throw ServerException(message: e.message);
-    } catch (e) {
-      throw ServerException(message: 'Error al actualizar el perfil de profesor: $e');
+    Future<ProfessorProfileModel?> getProfessorProfile(String userId) async {
+      try {
+        final data = await supabaseClient
+            .from('professors')
+            .select()
+            .eq('ID', userId)
+            .single();
+
+        return ProfessorProfileModel.fromJson(data);
+      } on PostgrestException catch (e) {
+        if (e.code == 'PGRST116') {
+          return null;
+        }
+        throw ServerException(message: 'Error inesperado al obtener perfil de profesor: ${e.message}');
+      } catch (e) {
+        throw ServerException(message: 'Error inesperado al obtener perfil de profesor: $e');
+      }
     }
-  }
+  
+  @override
+    Future<void> updateProfessorProfile(ProfessorProfileModel profile) async {
+      try {
+        await supabaseClient
+            .from('professors')
+            .update(profile.toJson())
+            .eq('ID', profile.id);
+      } on PostgrestException catch (e) {
+        throw ServerException(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al actualizar el perfil de profesor: $e');
+      }
+    }
+  
+  @override
+    Future<void> createAdmin(AdminModel admin) async {
+      try {
+        await supabaseClient
+            .from('admin')
+            .insert(admin.toJson());
+      } on PostgrestException catch (e) {
+        throw ServerException(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al crear el administrador: $e');
+      }
+    }
+
+    @override
+    Future<AdminModel?> getAdmin(String adminId) async {
+      try {
+        final data = await supabaseClient
+            .from('admin')
+            .select()
+            .eq('id_admin', adminId)
+            .maybeSingle();
+
+        if (data == null) return null;
+        return AdminModel.fromJson(data);
+      } on PostgrestException catch (e) {
+        if (e.code == 'PGRST116') {
+          return null;
+        }
+        throw ServerException(message: 'Error inesperado al obtener administrador: ${e.message}');
+      } catch (e) {
+        throw ServerException(message: 'Error inesperado al obtener administrador: $e');
+      }
+    }
+
+    @override
+    Future<void> updateAdmin(AdminModel admin) async {
+      try {
+        await supabaseClient
+            .from('admin')
+            .update(admin.toJson())
+            .eq('id_admin', admin.idAdmin);
+      } on PostgrestException catch (e) {
+        throw ServerException(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al actualizar el administrador: $e');
+      }
+    }
 }
