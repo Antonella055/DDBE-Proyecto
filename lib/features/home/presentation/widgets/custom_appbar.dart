@@ -5,7 +5,8 @@ import 'dart:developer' as developer; // Importar para usar developer.log
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final Color linkTextColor;
-  final VoidCallback? onProfileIconPressed; // NEW: Callback para el icono de perfil
+  final VoidCallback?
+  onProfileIconPressed; // NEW: Callback para el icono de perfil
 
   CustomAppBar({
     super.key,
@@ -24,10 +25,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(
-          bottom: BorderSide(
-            color: Colors.grey,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: Colors.grey, width: 0.5),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -41,8 +39,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 _supabaseService.getPublicImageUrl('images', 'upload/logo.png'),
                 height: 60,
                 errorBuilder: (context, error, stackTrace) {
-                  developer.log('Error al cargar logo.png: $error', name: 'CustomAppBar'); // Usando developer.log
-                  return const Text('Error al cargar logo.png', style: TextStyle(color: Colors.red));
+                  developer.log(
+                    'Error al cargar logo.png: $error',
+                    name: 'CustomAppBar',
+                  ); // Usando developer.log
+                  return const Text(
+                    'Error al cargar logo.png',
+                    style: TextStyle(color: Colors.red),
+                  );
                 },
               ),
               const SizedBox(width: 12),
@@ -57,12 +61,69 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildAppBarMenuItem(context, 'DDBE', Colors.orange, route: '/home'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Noticias', Colors.black87, route: '/news'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Cronograma', Colors.black87, route: '/calendar'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Postúlate', Colors.black87, route: '/apply'), // Ejemplo de ruta
-                    _buildAppBarMenuItem(context, 'Contacto', Colors.black87, route: '/contact'), // ¡Aquí está la navegación a Contacto!
-                    _buildAppBarMenuItem(context, 'Más', Colors.black87, hasDropdown: true, route: '/more'), // Ejemplo de ruta
+                    _buildAppBarMenuItem(
+                      context,
+                      'DDBE',
+                      Colors.orange,
+                      route: '/home',
+                    ), // Ejemplo de ruta
+                    _buildAppBarMenuItem(
+                      context,
+                      'Noticias',
+                      Colors.black87,
+                      route: '/news',
+                    ), // Ejemplo de ruta
+                    _buildAppBarMenuItem(
+                      context,
+                      'Cronograma',
+                      Colors.black87,
+                      route: '/calendar',
+                    ), // Ejemplo de ruta
+                    _buildAppBarMenuItem(
+                      context,
+                      'Postúlate',
+                      Colors.black87,
+                      route: '/postulation',
+                    ), // Ejemplo de ruta
+                    _buildAppBarMenuItem(
+                      context,
+                      'Contacto',
+                      Colors.black87,
+                      route: '/contact',
+                    ), // ¡Aquí está la navegación a Contacto!
+                    // Aquí insertamos el PopupMenuButton
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'solicitar_ayuda') {
+                          Navigator.of(context).pushNamed('/help');
+                        }
+                        // Puedes agregar más opciones aquí si lo necesitas
+                      },
+                      child: Row(
+                        children: const [
+                          Text(
+                            'Más',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                      itemBuilder:
+                          (BuildContext context) => <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'solicitar_ayuda',
+                              child: Text('Solicitar Ayuda'),
+                            ),
+                          ],
+                    ),
                   ],
                 ),
               ),
@@ -74,17 +135,24 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               IconButton(
                 icon: Icon(Icons.notifications_none, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Icono de notificaciones presionado', name: 'CustomAppBar'); // Usando developer.log
+                  developer.log(
+                    'Icono de notificaciones presionado',
+                    name: 'CustomAppBar',
+                  ); // Usando developer.log
                 },
               ),
               IconButton(
                 icon: Icon(Icons.message, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Icono de mensaje presionado', name: 'CustomAppBar'); // Usando developer.log
+                  developer.log(
+                    'Icono de mensaje presionado',
+                    name: 'CustomAppBar',
+                  ); // Usando developer.log
                 },
               ),
               // NEW: Icono de perfil de usuario con el callback
-              if (onProfileIconPressed != null) // Solo muestra si se proporciona el callback
+              if (onProfileIconPressed !=
+                  null) // Solo muestra si se proporciona el callback
                 IconButton(
                   icon: Icon(Icons.account_circle, color: Colors.grey[700]),
                   onPressed: onProfileIconPressed, // Usa el callback pasado
@@ -92,7 +160,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               IconButton(
                 icon: Icon(Icons.search, color: Colors.grey[700]),
                 onPressed: () {
-                  developer.log('Icono de búsqueda presionado', name: 'CustomAppBar'); // Usando developer.log
+                  developer.log(
+                    'Icono de búsqueda presionado',
+                    name: 'CustomAppBar',
+                  ); // Usando developer.log
                 },
               ),
               if (!isLargeScreen)
@@ -111,29 +182,32 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(80.0);
 
   // Widget auxiliar para construir cada ítem del menú de la barra de navegación
-  Widget _buildAppBarMenuItem(BuildContext context, String text, Color color, {bool hasDropdown = false, String? route}) {
+  Widget _buildAppBarMenuItem(
+    BuildContext context,
+    String text,
+    Color color, {
+    String? route,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: InkWell(
         onTap: () {
-          developer.log('Presionaste: $text', name: 'CustomAppBar'); // Usando developer.log
+          developer.log(
+            'Presionaste: $text',
+            name: 'CustomAppBar',
+          ); // Usando developer.log
           if (route != null) {
             // Verifica si la ruta no es nula antes de navegar
             Navigator.of(context).pushNamed(route);
           }
         },
-        child: Row(
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-              ),
-            ),
-            if (hasDropdown) const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
-          ],
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w500,
+            fontSize: 16,
+          ),
         ),
       ),
     );
