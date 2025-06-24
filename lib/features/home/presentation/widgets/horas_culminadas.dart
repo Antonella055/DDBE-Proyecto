@@ -1,91 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
 
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+class HorasCulminadasWidget extends StatefulWidget {
+  final String idEstudiante;
+
+  const HorasCulminadasWidget({super.key, required this.idEstudiante});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<HorasCulminadasWidget> createState() => _HorasCulminadasWidgetState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _HorasCulminadasWidgetState extends State<HorasCulminadasWidget> {
   final SupabaseService _supabaseService = SupabaseService();
   List<Map<String, dynamic>> _horas = [];
-
-  Future<void> registrarHoras(
-    DateTime fecha,
-    int horas,
-    String descripcion,
-  ) async {
-    await _supabaseService.registrarHorasCulminadas(fecha, horas, descripcion);
-    await cargarHoras();
-  }
-
-  Future<void> cargarHoras() async {
-    final horas = await _supabaseService.obtenerHorasUsuarioActual();
-    setState(() {
-      _horas = horas;
-    });
-  }
-
-  Future<void> editarHora(Map<String, dynamic> hora) async {
-    final horasController = TextEditingController(
-      text: hora['horas'].toString(),
-    );
-    final descripcionController = TextEditingController(
-      text: hora['descripcion'] ?? '',
-    );
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Editar horas'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: horasController,
-                  decoration: const InputDecoration(hintText: 'Horas'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: descripcionController,
-                  decoration: const InputDecoration(hintText: 'Descripción'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Guardar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (result == true &&
-        horasController.text.trim().isNotEmpty &&
-        descripcionController.text.trim().isNotEmpty) {
-      await _supabaseService.editarHoraCulminada(
-        hora['id_hora'],
-        DateTime.parse(hora['fecha']), // Mantiene la fecha original
-        int.tryParse(horasController.text.trim()) ?? 0,
-        descripcionController.text.trim(),
-      );
-      await cargarHoras();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Hora editada')));
-    }
-  }
+  bool _loading = false;
 
   @override
   void initState() {
@@ -93,200 +21,175 @@ class _DashboardScreenState extends State<DashboardScreen> {
     cargarHoras();
   }
 
+  Future<void> cargarHoras() async {
+    setState(() => _loading = true);
+    try {
+      final horas = await _supabaseService.obtenerHorasPorIdEstudiante(
+        widget.idEstudiante,
+      );
+      setState(() {
+        _horas = horas;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al cargar horas: $e')));
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> registrarHoras(
+    DateTime fecha,
+    int horas,
+    String descripcion,
+  ) async {
+    try {
+      await _supabaseService.registrarHoras(
+        idEstudiante: widget.idEstudiante, // ✅
+        fecha: fecha,
+        horas: horas,
+        descripcion: descripcion,
+        //
+      );
+      await cargarHoras();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Horas registradas')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    int totalHoras = _horas.fold(
-      0,
-      (sum, item) =>
-          sum +
-          (item['horas'] is int
-              ? item['horas'] as int
-              : int.tryParse(item['horas']?.toString() ?? '0') ?? 0),
-    );
+    int totalHoras =
+        _horas
+            .fold<num>(
+              0,
+              (sum, item) =>
+                  sum +
+                  (item['horas'] is int
+                      ? item['horas']
+                      : int.tryParse(item['horas'].toString()) ?? 0),
+            )
+            .toInt();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          Center(
-            child: CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.blue,
-              child: Text(
-                '$totalHoras',
-                style: const TextStyle(fontSize: 32, color: Colors.white),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _horas.length,
-              itemBuilder: (context, index) {
-                final item = _horas[index];
-                return ListTile(
-                  title: Text('Fecha: ${item['fecha']}'),
-                  subtitle: Text('Descripción: ${item['descripcion'] ?? ''}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Horas: ${item['horas']}'),
-                      if (index == 0) ...[
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () async {
-                            await editarHora(item);
-                          },
+      appBar: AppBar(title: const Text('Horas Culminadas')),
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Center(
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.blue,
+                      child: Text(
+                        '$totalHoras',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          color: Colors.white,
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle,
-                            color: Colors.orange,
-                          ),
-                          tooltip: 'Restar horas',
-                          onPressed: () async {
-                            final restarController = TextEditingController();
-                            final descripcionController =
-                                TextEditingController();
-                            final result = await showDialog<bool>(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: const Text('Restar horas'),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextField(
-                                        controller: restarController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Horas a restar',
-                                        ),
-                                        keyboardType: TextInputType.number,
-                                      ),
-                                      TextField(
-                                        controller: descripcionController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Motivo o descripción',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, false),
-                                      child: const Text('Cancelar'),
-                                    ),
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, true),
-                                      child: const Text('Restar'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                            if (result == true &&
-                                restarController.text.trim().isNotEmpty &&
-                                int.tryParse(restarController.text.trim()) !=
-                                    null) {
-                              await registrarHoras(
-                                DateTime.now(),
-                                -int.parse(
-                                  restarController.text.trim(),
-                                ), // horas negativas
-                                descripcionController.text.trim().isNotEmpty
-                                    ? descripcionController.text.trim()
-                                    : 'Corrección/resta de horas',
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Horas restadas')),
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ],
+                      ),
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _horas.length,
+                      itemBuilder: (context, index) {
+                        final item = _horas[index];
+                        return ListTile(
+                          title: Text('Fecha: ${item['fecha']}'),
+                          subtitle: Text(
+                            'Descripción: ${item['descripcion'] ?? ''}',
+                          ),
+                          trailing: Text('Horas: ${item['horas']}'),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final horasController = TextEditingController();
           final descripcionController = TextEditingController();
-          DateTime? fechaSeleccionada;
+          final diaController = TextEditingController();
+          final mesController = TextEditingController();
+          final anioController = TextEditingController();
 
           final result = await showDialog<bool>(
             context: context,
             builder: (context) {
-              return StatefulBuilder(
-                builder:
-                    (context, setStateDialog) => AlertDialog(
-                      title: const Text('Registrar horas'),
-                      content: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextField(
-                              controller: horasController,
+              return AlertDialog(
+                title: const Text('Registrar horas'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: horasController,
+                        decoration: const InputDecoration(hintText: 'Horas'),
+                        keyboardType: TextInputType.number,
+                      ),
+                      TextField(
+                        controller: descripcionController,
+                        decoration: const InputDecoration(
+                          hintText: 'Descripción',
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: TextField(
+                              controller: diaController,
                               decoration: const InputDecoration(
-                                hintText: 'Horas',
+                                hintText: 'Día',
                               ),
                               keyboardType: TextInputType.number,
                             ),
-                            TextField(
-                              controller: descripcionController,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: TextField(
+                              controller: mesController,
                               decoration: const InputDecoration(
-                                hintText: 'Descripción',
+                                hintText: 'Mes',
                               ),
+                              keyboardType: TextInputType.number,
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Text('Fecha: '),
-                                Text(
-                                  fechaSeleccionada != null
-                                      ? '${fechaSeleccionada!.toLocal()}'.split(
-                                        ' ',
-                                      )[0]
-                                      : 'No seleccionada',
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.calendar_today),
-                                  onPressed: () async {
-                                    final picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: DateTime.now(),
-                                      firstDate: DateTime(2000),
-                                      lastDate: DateTime(2100),
-                                    );
-                                    if (picked != null) {
-                                      setStateDialog(() {
-                                        fechaSeleccionada = picked;
-                                      });
-                                    }
-                                  },
-                                ),
-                              ],
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: TextField(
+                              controller: anioController,
+                              decoration: const InputDecoration(
+                                hintText: 'Año',
+                              ),
+                              keyboardType: TextInputType.number,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Guardar'),
-                        ),
-                      ],
-                    ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Guardar'),
+                  ),
+                ],
               );
             },
           );
@@ -294,12 +197,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (result == true &&
               horasController.text.trim().isNotEmpty &&
               descripcionController.text.trim().isNotEmpty &&
-              fechaSeleccionada != null) {
-            await registrarHoras(
-              fechaSeleccionada!,
-              int.tryParse(horasController.text.trim()) ?? 0,
-              descripcionController.text.trim(),
+              diaController.text.trim().isNotEmpty &&
+              mesController.text.trim().isNotEmpty &&
+              anioController.text.trim().isNotEmpty) {
+            DateTime? fecha;
+            try {
+              fecha = DateTime(
+                int.parse(anioController.text.trim()),
+                int.parse(mesController.text.trim()),
+                int.parse(diaController.text.trim()),
+              );
+            } catch (_) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Fecha inválida')));
+              return;
+            }
+            await _supabaseService.registrarHoras(
+              idEstudiante: widget.idEstudiante,
+              fecha: fecha,
+              horas: int.tryParse(horasController.text.trim()) ?? 0,
+              descripcion: descripcionController.text.trim(),
+              // actividad: 'opcional',
             );
+            await cargarHoras();
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(const SnackBar(content: Text('Horas registradas')));

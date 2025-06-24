@@ -2,6 +2,8 @@ import 'dart:io'; // Necesario para la clase File
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ayudantia_software/features/home/data/news_model.dart'; // Importa el modelo de noticia
 
+final userId = Supabase.instance.client.auth.currentUser?.id;
+
 class SupabaseService {
   // Obtiene la instancia del cliente Supabase que se inicializó en main.dart
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -139,67 +141,63 @@ class SupabaseService {
   }
 
   /// inicio de registrar horas
-  Future<void> registrarHorasCulminadas(
-    DateTime fecha,
-    int horas,
-    String descripcion,
-  ) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) throw Exception('Usuario no autenticado');
-    await _supabase.from('horas_culminadas').insert({
-      'id': userId,
+  Future<void> registrarHoras({
+    required String idEstudiante,
+    required DateTime fecha,
+    required int horas,
+    required String descripcion,
+  }) async {
+    final Map<String, dynamic> data = {
+      'idEstudiante': idEstudiante,
       'fecha': fecha.toIso8601String().split('T')[0],
       'horas': horas,
       'descripcion': descripcion,
-    });
+    };
+
+    await _supabase.from('horasCulminadas').insert(data);
   }
 
-  Future<List<Map<String, dynamic>>> obtenerHorasUsuarioActual() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) throw Exception('Usuario no autenticado');
-    final response = await _supabase
-        .from('horas_culminadas')
-        .select('id_hora, horas, fecha, descripcion')
-        .eq('id_estudiante', userId)
-        .order('fecha', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+  Future<List<Map<String, dynamic>>> obtenerHorasPorIdEstudiante(
+    String idEstudiante,
+  ) async {
+    final data = await _supabase
+        .from('horasCulminadas')
+        .select()
+        .eq('idEstudiante', idEstudiante);
+    return List<Map<String, dynamic>>.from(data);
   }
 
-  Future<void> eliminarHoraCulminada(int idHora) async {
-    await _supabase.from('horas_culminadas').delete().eq('id_hora', idHora);
+  Future<void> eliminarHoraCulminada(int idhora) async {
+    await _supabase.from('horasCulminadas').delete().eq('idhora', idhora);
   }
 
   Future<void> editarHoraCulminada(
-    int idHora,
+    int idhora,
     DateTime fecha,
     int horas,
     String descripcion,
   ) async {
     await _supabase
-        .from('horas_culminadas')
+        .from('horasCulminadas')
         .update({
           'fecha': fecha.toIso8601String().split('T')[0],
           'horas': horas,
           'descripcion': descripcion,
         })
-        .eq('id_hora', idHora);
+        .eq('idhora', idhora);
   }
 
   /// final de horas registradas
   /// mostrar las horas de los estudiantes del profesor
   Future<List<Map<String, dynamic>>> obtenerHorasDeEstudiantesDelProfesor(
     String profesorId, {
-    String? actividad,
     int? mes,
   }) async {
     var query = _supabase
-        .from('horas_culminadas')
+        .from('horasCulminadas')
         .select('horas, fecha, descripcion, estudiantes(nombre)')
         .eq('id_profesor', profesorId);
 
-    if (actividad != null) {
-      query = query.eq('actividad', actividad);
-    }
     if (mes != null) {
       query = query.filter('extract(month from fecha)', 'eq', mes);
     }

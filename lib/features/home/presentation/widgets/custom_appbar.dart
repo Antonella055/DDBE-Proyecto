@@ -43,6 +43,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     'Error al cargar logo.png: $error',
                     name: 'CustomAppBar',
                   );
+                  // Usando developer.log
                   return const Text(
                     'Error al cargar logo.png',
                     style: TextStyle(color: Colors.red),
@@ -65,13 +66,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       'DDBE',
                       Colors.orange,
                       route: '/home',
-                    ),
+                    ), // Ejemplo de ruta
                     _buildAppBarMenuItem(
                       context,
                       'Noticias',
                       Colors.black87,
                       route: '/news',
-                    ),
+                    ), // Ejemplo de ruta
                     _buildAppBarMenuItem(
                       context,
                       'Cronograma',
@@ -82,8 +83,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       context,
                       'Postúlate',
                       Colors.black87,
-                      route: '/apply',
-                    ),
+                      route: '/postulation',
+                    ), // Ejemplo de ruta
                     _buildAppBarMenuItem(
                       context,
                       'Contacto',
@@ -102,6 +103,39 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       Colors.black87,
                       hasDropdown: true,
                       route: '/more',
+                    ), // ¡Aquí está la navegación a Contacto!
+                    // Aquí insertamos el PopupMenuButton
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'solicitar_ayuda') {
+                          Navigator.of(context).pushNamed('/help');
+                        }
+                        // Puedes agregar más opciones aquí si lo necesitas
+                      },
+                      child: Row(
+                        children: const [
+                          Text(
+                            'Más',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                      itemBuilder:
+                          (BuildContext context) => <PopupMenuEntry<String>>[
+                            const PopupMenuItem<String>(
+                              value: 'solicitar_ayuda',
+                              child: Text('Solicitar Ayuda'),
+                            ),
+                          ],
                     ),
                   ],
                 ),
@@ -155,7 +189,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   developer.log(
                     'Icono de búsqueda presionado',
                     name: 'CustomAppBar',
-                  );
+                  ); // Usando developer.log
                 },
               ),
               if (!isLargeScreen)
@@ -187,6 +221,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: InkWell(
         onTap: () {
           developer.log('Presionaste: $text', name: 'CustomAppBar');
+
           if (route != null) {
             Navigator.of(context).pushNamed(route, arguments: arguments);
           }

@@ -33,7 +33,7 @@ class _EstadisticasProfeState extends State<EstadisticasProfe> {
   Future<void> cargarHoras({String? actividad, int? mes}) async {
     final horas = await _supabaseService.obtenerHorasDeEstudiantesDelProfesor(
       widget.profesorId,
-      actividad: actividad,
+
       mes: mes,
     );
     setState(() {

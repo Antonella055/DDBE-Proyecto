@@ -90,7 +90,6 @@ class _HorasEstudiantesYEstadisticasState
     final supabaseService = SupabaseService();
     final horas = await supabaseService.obtenerHorasDeEstudiantesDelProfesor(
       widget.profesorId,
-      actividad: widget.actividad,
       mes: widget.mes,
     );
     setState(() {

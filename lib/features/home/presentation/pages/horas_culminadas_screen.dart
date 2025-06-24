@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HorasCulminadasScreen extends StatefulWidget {
   const HorasCulminadasScreen({super.key});
@@ -11,18 +12,26 @@ class HorasCulminadasScreen extends StatefulWidget {
 class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
   final SupabaseService _supabaseService = SupabaseService();
   List<Map<String, dynamic>> _horas = [];
+  late final String idEstudiante; // Cambia aquí
 
   Future<void> registrarHoras(
     DateTime fecha,
     int horas,
     String descripcion,
   ) async {
-    await _supabaseService.registrarHorasCulminadas(fecha, horas, descripcion);
+    await _supabaseService.registrarHoras(
+      idEstudiante: idEstudiante,
+      fecha: fecha,
+      horas: horas,
+      descripcion: descripcion,
+    );
     await cargarHoras();
   }
 
   Future<void> cargarHoras() async {
-    final horas = await _supabaseService.obtenerHorasUsuarioActual();
+    final horas = await _supabaseService.obtenerHorasPorIdEstudiante(
+      idEstudiante,
+    );
     setState(() {
       _horas = horas;
     });
@@ -75,7 +84,7 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
         horasController.text.trim().isNotEmpty &&
         descripcionController.text.trim().isNotEmpty) {
       await _supabaseService.editarHoraCulminada(
-        hora['id_hora'],
+        hora['idhora'],
         DateTime.parse(hora['fecha']),
         int.tryParse(horasController.text.trim()) ?? 0,
         descripcionController.text.trim(),
@@ -90,6 +99,16 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
   @override
   void initState() {
     super.initState();
+    idEstudiante = Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (idEstudiante.isEmpty) {
+      // Manejar caso de usuario no autenticado
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuario no autenticado')),
+        );
+      });
+      return;
+    }
     cargarHoras();
   }
 
