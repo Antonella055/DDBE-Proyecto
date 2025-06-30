@@ -49,52 +49,73 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showResetPasswordEmailModal() {
+    final _resetEmailController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) {
-        final _resetEmailController = TextEditingController();
         return AlertDialog(
           title: const Text('Restablecer contraseña'),
-          content: TextField(
-            controller: _resetEmailController,
-            decoration: const InputDecoration(
-              labelText: 'Correo electrónico',
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Ingresa tu correo electrónico para recibir el enlace de restablecimiento:'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _resetEmailController,
+                decoration: const InputDecoration(
+                  labelText: 'Correo electrónico',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.pop(context),
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
               onPressed: () async {
-                try {
-                  final currentUrl = Uri.base;
-                  final redirectUrl =
-                      '${currentUrl.scheme}://${currentUrl.host}:${currentUrl.port}/#/reset-password';
-
-                  await Supabase.instance.client.auth.resetPasswordForEmail(
-                    _resetEmailController.text.trim(),
-                    redirectTo: redirectUrl,
+                final email = _resetEmailController.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor ingresa tu correo electrónico'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
+                  return;
+                }
+
+                try {
+                  await Supabase.instance.client.auth.resetPasswordForEmail(email);
+                  
                   if (mounted) {
-                    Navigator.of(context).pop();
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Correo de restablecimiento enviado.'),
+                      SnackBar(
+                        content: Text('Correo de recuperación enviado a $email'),
                         backgroundColor: Colors.green,
                       ),
                     );
                   }
+                } on AuthException catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: ${e.message}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error al enviar el correo: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
               child: const Text('Enviar'),
@@ -130,9 +151,7 @@ class _LoginPageState extends State<LoginPage> {
             left: 24,
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Color(0xFF003087), size: 32),
-              onPressed: () {
-                Navigator.of(context).maybePop();
-              },
+              onPressed: () => Navigator.of(context).maybePop(),
               tooltip: 'Volver',
             ),
           ),
@@ -268,5 +287,12 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
