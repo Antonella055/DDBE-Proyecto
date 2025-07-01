@@ -1,4 +1,3 @@
-
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +12,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/news_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/chat_page.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/help_request_screen.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_student.dart';
 
@@ -33,7 +33,8 @@ Future<void> main() async {
   await Supabase.initialize(
     url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
-  ); runApp(const MyApp());
+  ); 
+  runApp(const MyApp());
 }
 
 // Solo una vez, después de inicializar Supabase
@@ -96,6 +97,7 @@ class _MyAppState extends State<MyApp> {
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
         '/postulation': (context) => const AyudantiaPage(),
+        '/chat': (context) => const ChatPage(), 
         '/create-student': (context) => const AdminCreateStudent(),
         '/create-professor': (context) => const AdminCreateProfessor(),
         '/help': (context) => const HelpRequestScreen(), // <-- ¡Esta es la ruta crucial para "Solicitar Ayuda"!

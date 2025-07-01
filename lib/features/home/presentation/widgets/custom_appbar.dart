@@ -1,30 +1,98 @@
 import 'package:flutter/material.dart';
-import 'package:ayudantia_software/services/supabase_service.dart'; // Importa el servicio de Supabase
-import 'dart:developer' as developer; // Importar para usar developer.log
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ayudantia_software/services/supabase_service.dart';
+import 'package:ayudantia_software/services/chat_service.dart';
+import 'dart:developer' as developer;
+
+// Definición de colores del manual de marca
+const Color kOrangeColor = Color(0xFFFF8200);
+const Color kLightGrayColor = Color(0xFFD9D9D6);
+const Color kDarkBlueColor = Color(0xFF003087);
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  final Color linkTextColor;
-  final VoidCallback?
-  onProfileIconPressed; // NEW: Callback para el icono de perfil
+  final String currentRoute; // Añadimos esta propiedad para saber la ruta actual
+  final VoidCallback? onProfileIconPressed;
 
-  CustomAppBar({
+  const CustomAppBar({
     super.key,
     required this.scaffoldKey,
-    required this.linkTextColor,
-    this.onProfileIconPressed, // NEW: Añade al constructor
+    required this.currentRoute, // Ahora es un parámetro requerido
+    this.onProfileIconPressed,
   });
 
-  final SupabaseService _supabaseService = SupabaseService();
+  static final SupabaseService _supabaseService = SupabaseService();
+  static final ChatService _chatService = ChatService();
+
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Inicio de sesión requerido'),
+        content: const Text('Debes iniciar sesión para usar el chat.'),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            child: const Text('Ir a Login'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed('/login');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleChatButtonPress(BuildContext context) async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user == null) {
+      _showLoginRequiredDialog(context);
+    } else {
+      try {
+        final chats = await _chatService.getUserChats();
+
+        if (chats.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No tienes chats disponibles.',
+                  style: TextStyle(color: Colors.white)),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          developer.log('User logged in but no chats available.',
+              name: 'CustomAppBar');
+        } else {
+          developer.log('Chats available. Navigating to /chat',
+              name: 'CustomAppBar');
+          Navigator.of(context).pushNamed('/chat');
+        }
+      } catch (e) {
+        developer.log('Error getting chats: $e', name: 'CustomAppBarError');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar chats: $e',
+                style: const TextStyle(color: Colors.white)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     bool isLargeScreen = MediaQuery.of(context).size.width > 600;
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: const Border(
+        border: Border(
           bottom: BorderSide(color: Colors.grey, width: 0.5),
         ),
       ),
@@ -32,104 +100,43 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Sección izquierda: Logo y texto "Universidad Metropolitana"
-          Row(
-            children: [
-              Image.network(
-                _supabaseService.getPublicImageUrl('images', 'upload/logo.png'),
-                height: 60,
-                errorBuilder: (context, error, stackTrace) {
-                  developer.log(
-                    'Error al cargar logo.png: $error',
-                    name: 'CustomAppBar',
-                  ); // Usando developer.log
-                  return const Text(
-                    'Error al cargar logo.png',
-                    style: TextStyle(color: Colors.red),
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              // Aquí podrías tener el texto de la universidad si lo tuvieras antes
-            ],
+          // Logo de la universidad
+          GestureDetector(
+            onTap: () {
+              // Al presionar el logo, navega al home
+              Navigator.of(context).pushNamed('/home');
+            },
+            child: Image.network(
+              CustomAppBar._supabaseService.getPublicImageUrl('images', 'upload/logo.png'),
+              height: 40, // Logo más pequeño
+              errorBuilder: (context, error, stackTrace) {
+                developer.log('Error loading logo.png: $error',
+                    name: 'CustomAppBar');
+                return const Text('Error loading logo.png',
+                    style: TextStyle(color: Colors.red));
+              },
+            ),
           ),
+          const SizedBox(width: 12),
 
-          // Sección central: Menú de navegación (solo visible en pantallas grandes)
           if (isLargeScreen)
             Expanded(
               child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildAppBarMenuItem(
-                      context,
-                      'DDBE',
-                      Colors.orange,
-                      route: '/home',
-                    ), // Ejemplo de ruta
-                    _buildAppBarMenuItem(
-                      context,
-                      'Noticias',
-                      Colors.black87,
-                      route: '/news',
-                    ), // Ejemplo de ruta
-                    _buildAppBarMenuItem(
-                      context,
-                      'Cronograma',
-                      Colors.black87,
-                      route: '/calendar',
-                    ), // Ejemplo de ruta
-                    _buildAppBarMenuItem(
-                      context,
-                      'Postúlate',
-                      Colors.black87,
-                      route: '/postulation',
-                    ), // Ejemplo de ruta
-                    _buildAppBarMenuItem(
-                      context,
-                      'Contacto',
-                      Colors.black87,
-                      route: '/contact',
-                    ), // ¡Aquí está la navegación a Contacto!
-                    // Aquí insertamos el PopupMenuButton
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'solicitar_ayuda') {
-                          Navigator.of(context).pushNamed('/help');
-                        }
-                        // Puedes agregar más opciones aquí si lo necesitas
-                      },
-                      child: Row(
-                        children: const [
-                          Text(
-                            'Más',
-                            style: TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            color: Colors.grey,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                      itemBuilder:
-                          (BuildContext context) => <PopupMenuEntry<String>>[
-                            const PopupMenuItem<String>(
-                              value: 'solicitar_ayuda',
-                              child: Text('Solicitar Ayuda'),
-                            ),
-                          ],
-                    ),
+                    _buildAppBarMenuItem(context, 'DDBE', '/home'),
+                    _buildAppBarMenuItem(context, 'Noticias', '/news'),
+                    _buildAppBarMenuItem(context, 'Cronograma', '/calendar'),
+                    _buildAppBarMenuItem(context, 'Postúlate', '/postulation'),
+                    _buildAppBarMenuItem(context, 'Contacto', '/contact'),
+                    _buildAppBarMenuItem(context, 'Más', '/more',
+                        hasDropdown: true),
                   ],
                 ),
               ),
             ),
 
-          // Sección derecha: Iconos (notificaciones, mensajes, usuario, búsqueda)
           Row(
             children: [
               IconButton(
@@ -138,24 +145,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   developer.log(
                     'Icono de notificaciones presionado',
                     name: 'CustomAppBar',
-                  ); // Usando developer.log
+                  );
                 },
               ),
               IconButton(
                 icon: Icon(Icons.message, color: Colors.grey[700]),
-                onPressed: () {
-                  developer.log(
-                    'Icono de mensaje presionado',
-                    name: 'CustomAppBar',
-                  ); // Usando developer.log
-                },
+                onPressed: () => _handleChatButtonPress(context),
               ),
-              // NEW: Icono de perfil de usuario con el callback
-              if (onProfileIconPressed !=
-                  null) // Solo muestra si se proporciona el callback
+              if (onProfileIconPressed != null)
                 IconButton(
                   icon: Icon(Icons.account_circle, color: Colors.grey[700]),
-                  onPressed: onProfileIconPressed, // Usa el callback pasado
+                  onPressed: onProfileIconPressed,
                 ),
               IconButton(
                 icon: Icon(Icons.search, color: Colors.grey[700]),
@@ -163,12 +163,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   developer.log(
                     'Icono de búsqueda presionado',
                     name: 'CustomAppBar',
-                  ); // Usando developer.log
+                  );
                 },
               ),
               if (!isLargeScreen)
                 IconButton(
-                  icon: Icon(Icons.accessibility_new, color: linkTextColor),
+                  icon: Icon(Icons.menu, color:const Color.fromARGB(255, 59, 59, 59)), // Color de menú del manual de marca
                   onPressed: () => scaffoldKey.currentState?.openEndDrawer(),
                 ),
             ],
@@ -179,34 +179,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(80.0);
+  Size get preferredSize => const Size.fromHeight(60.0); // AppBar más finito, de 60.0
 
-  // Widget auxiliar para construir cada ítem del menú de la barra de navegación
-  Widget _buildAppBarMenuItem(
-    BuildContext context,
-    String text,
-    Color color, {
-    String? route,
-  }) {
+  Widget _buildAppBarMenuItem(BuildContext context, String text, String route,
+      {bool hasDropdown = false}) {
+    // Determina si esta es la ruta actual para aplicar el color naranja
+    final bool isCurrentRoute = (currentRoute == route);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: InkWell(
         onTap: () {
-          developer.log(
-            'Presionaste: $text',
-            name: 'CustomAppBar',
-          ); // Usando developer.log
-          if (route != null) {
-            // Verifica si la ruta no es nula antes de navegar
-            Navigator.of(context).pushNamed(route);
-          }
+          developer.log('You pressed: $text', name: 'CustomAppBar');
+          Navigator.of(context).pushNamed(route);
         },
         child: Text(
           text,
           style: TextStyle(
-            color: color,
+            color: isCurrentRoute ? kOrangeColor :const Color.fromARGB(255, 59, 59, 59), // Color dinámico
             fontWeight: FontWeight.w500,
             fontSize: 16,
+            fontFamily:
+                'Roboto', // Aplicamos la tipografía Roboto para los ítems
           ),
         ),
       ),
