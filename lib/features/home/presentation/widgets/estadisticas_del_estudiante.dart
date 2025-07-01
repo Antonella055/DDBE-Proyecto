@@ -8,6 +8,10 @@ class GraficoHorasEstudiantes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (horasPorEstudiante.isEmpty) {
+      return const Center(child: Text('No hay datos disponibles'));
+    }
+
     final estudiantes = horasPorEstudiante.keys.toList();
     final horas = horasPorEstudiante.values.toList();
 
@@ -15,7 +19,9 @@ class GraficoHorasEstudiantes extends StatelessWidget {
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
         maxY:
-            (horas.isNotEmpty ? horas.reduce((a, b) => a > b ? a : b) : 10) + 2,
+            horas.isNotEmpty
+                ? horas.reduce((a, b) => a > b ? a : b).toDouble() + 2
+                : 10,
         barTouchData: BarTouchData(enabled: true),
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
@@ -26,9 +32,12 @@ class GraficoHorasEstudiantes extends StatelessWidget {
                 final idx = value.toInt();
                 if (idx < 0 || idx >= estudiantes.length)
                   return const SizedBox();
-                return Text(
-                  estudiantes[idx],
-                  style: const TextStyle(fontSize: 10),
+                return RotatedBox(
+                  quarterTurns: 1,
+                  child: Text(
+                    estudiantes[idx],
+                    style: const TextStyle(fontSize: 10),
+                  ),
                 );
               },
               reservedSize: 40,

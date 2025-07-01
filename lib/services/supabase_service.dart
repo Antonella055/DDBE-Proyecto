@@ -193,16 +193,97 @@ class SupabaseService {
     String profesorId, {
     int? mes,
   }) async {
-    var query = _supabase
-        .from('horasCulminadas')
-        .select('horas, fecha, descripcion, estudiantes(nombre)')
-        .eq('id_profesor', profesorId);
+    try {
+      final response = await _supabase
+          .from('horas_culminadas') // Asegúrate que este es el nombre correcto
+          .select('''
+            horas, 
+            fecha, 
+            descripcion, 
+            estudiantes:id_estudiante(nombre, apellido)  // Relación explícita
+          ''')
+          .eq('id_profesor', profesorId);
 
-    if (mes != null) {
-      query = query.filter('extract(month from fecha)', 'eq', mes);
+      // Conversión segura a List<Map<String, dynamic>>
+      final List<Map<String, dynamic>> result = [];
+
+      for (final item in response) {
+        // Manejo completo de nulos
+        final estudianteData =
+            item['estudiantes'] is Map
+                ? item['estudiantes'] as Map<String, dynamic>
+                : {'nombre': 'Estudiante no disponible'};
+
+        result.add({
+          'horas': item['horas'] ?? 0,
+          'fecha': item['fecha'] ?? '',
+          'descripcion': item['descripcion'] ?? '',
+          'estudiantes': estudianteData,
+        });
+      }
+
+      return result;
+    } catch (e) {
+      print('Error al obtener horas: $e');
+      return [];
     }
+  }
 
-    final response = await query;
-    return List<Map<String, dynamic>>.from(response);
+  Future<List<Map<String, dynamic>>> obtenerEstudiantesDelProfesor(
+    String profesorId,
+  ) async {
+    try {
+      final response = await _supabase
+          .from('students')
+          .select('''
+            id, 
+            carnet,
+            profiles: ID (full_name, avatar_url)
+          ''')
+          .eq('id_supervisor', profesorId);
+
+      return List<Map<String, dynamic>>.from(response).map((estudiante) {
+        return {
+          'id': estudiante['id'],
+          'carnet': estudiante['carnet'],
+          'nombre': estudiante['profiles']?['full_name'] ?? 'Sin nombre',
+          'avatar_url': estudiante['profiles']?['avatar_url'],
+        };
+      }).toList();
+    } catch (e) {
+      print('Error al obtener estudiantes: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getStudentsByProfessorId(String professorId) async {
+    try {
+      final List<Map<String, dynamic>> response = await _supabase
+          .from('students')
+          .select('*, profiles(full_name, email)')
+          .eq('id_supervisor', professorId)
+          .order('created_at', ascending: true);
+
+      print('Supabase response for students: $response'); // <- Añade esto
+
+      return response.map((student) {
+        print('Processing student: $student'); // <- Añade esto
+        final Map<String, dynamic>? profile = student['profiles'] as Map<String, dynamic>?;
+        print('Profile part: $profile'); // <- Añade esto
+
+        if (profile != null) {
+          student['full_name'] = profile['full_name'];
+          student['email'] = profile['email'];
+        } else {
+          student['full_name'] = 'Nombre no disponible';
+          student['email'] = 'Email no disponible';
+        }
+        return student;
+      }).toList();
+
+    } catch (e) {
+      print('Error al obtener estudiantes: $e');
+      return [];
+    }
   }
 }

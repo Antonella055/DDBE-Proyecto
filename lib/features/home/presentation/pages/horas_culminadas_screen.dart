@@ -3,7 +3,8 @@ import 'package:ayudantia_software/services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HorasCulminadasScreen extends StatefulWidget {
-  const HorasCulminadasScreen({super.key});
+  final String estudianteId;
+  const HorasCulminadasScreen({super.key, required this.estudianteId});
 
   @override
   State<HorasCulminadasScreen> createState() => _HorasCulminadasScreenState();
@@ -12,8 +13,7 @@ class HorasCulminadasScreen extends StatefulWidget {
 class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
   final SupabaseService _supabaseService = SupabaseService();
   List<Map<String, dynamic>> _horas = [];
-  late final String idEstudiante; // Cambia aquí
-
+  late final String idEstudiante;
   Future<void> registrarHoras(
     DateTime fecha,
     int horas,
@@ -39,7 +39,7 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
 
   Future<void> editarHora(Map<String, dynamic> hora) async {
     final horasController = TextEditingController(
-      text: hora['horas'].toString(),
+      text: (hora['horas'] ?? '').toString(),
     );
     final descripcionController = TextEditingController(
       text: hora['descripcion'] ?? '',
@@ -103,9 +103,9 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
     if (idEstudiante.isEmpty) {
       // Manejar caso de usuario no autenticado
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario no autenticado')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Usuario no autenticado')));
       });
       return;
     }
@@ -150,79 +150,73 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text('Horas: ${item['horas']}'),
-                      if (index == 0) ...[
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () async {
-                            await editarHora(item);
-                          },
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () async {
+                          await editarHora(item);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.remove_circle,
+                          color: Colors.orange,
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.remove_circle,
-                            color: Colors.orange,
-                          ),
-                          tooltip: 'Restar horas',
-                          onPressed: () async {
-                            final restarController = TextEditingController();
-                            final descripcionController =
-                                TextEditingController();
-                            final result = await showDialog<bool>(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: const Text('Restar horas'),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextField(
-                                        controller: restarController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Horas a restar',
-                                        ),
-                                        keyboardType: TextInputType.number,
+                        tooltip: 'Restar horas',
+                        onPressed: () async {
+                          final restarController = TextEditingController();
+                          final descripcionController = TextEditingController();
+                          final result = await showDialog<bool>(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('Restar horas'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextField(
+                                      controller: restarController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Horas a restar',
                                       ),
-                                      TextField(
-                                        controller: descripcionController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Motivo o descripción',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, false),
-                                      child: const Text('Cancelar'),
+                                      keyboardType: TextInputType.number,
                                     ),
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, true),
-                                      child: const Text('Restar'),
+                                    TextField(
+                                      controller: descripcionController,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Motivo o descripción',
+                                      ),
                                     ),
                                   ],
-                                );
-                              },
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancelar'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Restar'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (result == true &&
+                              restarController.text.trim().isNotEmpty &&
+                              int.tryParse(restarController.text.trim()) != null) {
+                            await registrarHoras(
+                              DateTime.now(),
+                              -int.parse(restarController.text.trim()),
+                              descripcionController.text.trim().isNotEmpty
+                                  ? descripcionController.text.trim()
+                                  : 'Corrección/resta de horas',
                             );
-                            if (result == true &&
-                                restarController.text.trim().isNotEmpty &&
-                                int.tryParse(restarController.text.trim()) !=
-                                    null) {
-                              await registrarHoras(
-                                DateTime.now(),
-                                -int.parse(restarController.text.trim()),
-                                descripcionController.text.trim().isNotEmpty
-                                    ? descripcionController.text.trim()
-                                    : 'Corrección/resta de horas',
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Horas restadas')),
-                              );
-                            }
-                          },
-                        ),
-                      ],
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Horas restadas')),
+                            );
+                          }
+                        },
+                      ),
                     ],
                   ),
                 );
@@ -299,7 +293,25 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
                           child: const Text('Cancelar'),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () {
+                            final horasText = horasController.text.trim();
+                            final descripcionText = descripcionController.text.trim();
+                            final isInt = int.tryParse(horasText) != null;
+
+                            if (!isInt) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Por favor, ingresa solo números enteros en el campo de horas.')),
+                              );
+                              return;
+                            }
+                            if (horasText.isEmpty || descripcionText.isEmpty || fechaSeleccionada == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Completa todos los campos y selecciona una fecha.')),
+                              );
+                              return;
+                            }
+                            Navigator.pop(context, true);
+                          },
                           child: const Text('Guardar'),
                         ),
                       ],

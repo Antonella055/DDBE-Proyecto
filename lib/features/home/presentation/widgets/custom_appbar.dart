@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/horas_culminadas_screen.dart'; // Import correcto
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as developer;
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -171,11 +172,22 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 tooltip: 'Horas Culminadas',
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const HorasCulminadasScreen(),
-                    ),
-                  );
+                  final userId = Supabase.instance.client.auth.currentUser?.id;
+                  if (userId != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                HorasCulminadasScreen(estudianteId: userId),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No hay usuario autenticado'),
+                      ),
+                    );
+                  }
                 },
               ),
               if (onProfileIconPressed != null)

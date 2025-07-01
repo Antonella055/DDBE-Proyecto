@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ayudantia_software/services/supabase_service.dart';
-import 'filtro.dart';
+
 import 'estadisticas_del_estudiante.dart'; // Importa el gráfico
+import 'FiltroWidget.dart';
 
 class EstadisticasProfe extends StatefulWidget {
   final String profesorId; // Pasa el id del profesor
@@ -57,7 +58,7 @@ class _EstadisticasProfeState extends State<EstadisticasProfe> {
     // Calcula el mapa de horas por estudiante para el gráfico
     Map<String, int> horasPorEstudiante = {};
     for (final item in _horas) {
-      final nombre = item['estudiantes']?['nombre'] ?? 'Sin nombre';
+      final nombre = (item['estudiantes'] as Map?)?['nombre']?.toString() ?? 'Sin nombre';
       final horas =
           item['horas'] is int
               ? item['horas'] as int
@@ -73,6 +74,8 @@ class _EstadisticasProfeState extends State<EstadisticasProfe> {
             padding: const EdgeInsets.all(8.0),
             child: FiltroWidget(
               actividades: actividades,
+              actividadSeleccionada: actividadSeleccionada,
+              mesSeleccionado: mesSeleccionado,
               onFiltrar: (actividad, mes) {
                 cargarHoras(actividad: actividad, mes: mes);
               },
@@ -85,7 +88,6 @@ class _EstadisticasProfeState extends State<EstadisticasProfe> {
               style: const TextStyle(fontSize: 24),
             ),
           ),
-          // Aquí va el gráfico
           if (horasPorEstudiante.isNotEmpty)
             SizedBox(
               height: 250,
@@ -99,10 +101,10 @@ class _EstadisticasProfeState extends State<EstadisticasProfe> {
                 ..._horas.map(
                   (item) => ListTile(
                     title: Text(
-                      'Estudiante: ${item['estudiantes'] != null ? item['estudiantes']['nombre'] ?? '' : ''}',
+                      'Estudiante: ${(item['estudiantes'] as Map?)?['nombre']?.toString() ?? 'Sin nombre'}',
                     ),
-                    subtitle: Text('Fecha: ${item['fecha']}'),
-                    trailing: Text('Horas: ${item['horas']}'),
+                    subtitle: Text('Fecha: ${item['fecha'] ?? 'No especificada'}'),
+                    trailing: Text('Horas: ${item['horas']?.toString() ?? '0'}'),
                   ),
                 ),
               ],

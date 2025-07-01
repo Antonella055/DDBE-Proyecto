@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ import 'package:ayudantia_software/features/home/presentation/pages/home_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/news_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
-import 'package:ayudantia_software/features/home/presentation/pages/dashboard_profesor.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/professor_dashboard_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/horas_culminadas_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/help_request_screen.dart';
@@ -30,16 +31,15 @@ Future<void> main() async {
     );
   }
 
-  // Inicialización de Supabase sin dotenv
+  // Inicialización de Supabase
   await Supabase.initialize(
-    url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
+    url: 'https://lbxkcilriktsmfiruvfj.supabase.co', // Tu URL de Supabase
     anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI', // Tu clave anon de Supabase
   );
   runApp(const MyApp());
 }
 
-// Solo una vez, después de inicializar Supabase
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatefulWidget {
@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         fontFamily: 'Arial',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFF57C00), // Naranja corporativo (tu color)
+          seedColor: const Color(0xFFF57C00),
           primary: const Color(0xFFF57C00),
           brightness: Brightness.light,
         ),
@@ -86,11 +86,10 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       // Lógica de navegación condicional basada en el estado de autenticación
-      home:
-          supabase.auth.currentSession == null
-              ? const HomeScreen() // Si no hay sesión, muestra tu HomeScreen
-              : const ProfilePage(), // Si hay sesión, muestra ProfilePage (o una página de dashboard de usuario)
-      // También puedes usar named routes para una navegación más flexible
+      home: supabase.auth.currentSession == null
+          ? const HomeScreen()
+          : const ProfilePage(),
+      // Rutas de navegación
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),
@@ -98,25 +97,37 @@ class _MyAppState extends State<MyApp> {
         '/news': (context) => const NewsScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
+        // Ruta para el dashboard del profesor
         '/dashboard': (context) {
-          final args =
-              ModalRoute.of(context)!.settings.arguments
-                  as Map<String, dynamic>;
-          return DashboardProfesor(profesorId: args['profesorId']);
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final idSupervisor = args?['id_supervisor'];
+          if (idSupervisor == null) {
+            return const Scaffold(
+              body: Center(child: Text('Error: No se proporcionó ID de supervisor')),
+            );
+          }
+          return ProfessorDashboardScreen(professorId: idSupervisor);
         },
-        '/horas_culminadas': (context) => const HorasCulminadasScreen(),
+        '/horas_estudiante': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final idEstudiante = args?['idEstudiante'];
+          if (idEstudiante == null) {
+            return const Scaffold(
+              body: Center(child: Text('No se proporcionó idEstudiante')),
+            );
+          }
+          return HorasCulminadasScreen(estudianteId: idEstudiante);
+        },
         '/postulation': (context) => const AyudantiaPage(),
         '/create-student': (context) => const AdminCreateStudent(),
         '/create-professor': (context) => const AdminCreateProfessor(),
-        '/help':
-            (context) =>
-                const HelpRequestScreen(), // <-- ¡Esta es la ruta crucial para "Solicitar Ayuda"!
+        '/help': (context) => const HelpRequestScreen(),
         '/reset-password': (context) {
           final uri = Uri.base;
           final codeFromUrl = uri.queryParameters['code'];
           return ResetPasswordPage(
             code: codeFromUrl,
-          ); // Pasa el código si está presente
+          );
         },
       },
     );
@@ -128,10 +139,9 @@ extension ContextExtension on BuildContext {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError
-                ? const Color.fromARGB(255, 211, 47, 47)
-                : const Color.fromARGB(255, 76, 175, 80),
+        backgroundColor: isError
+            ? const Color.fromARGB(255, 211, 47, 47)
+            : const Color.fromARGB(255, 76, 175, 80),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
