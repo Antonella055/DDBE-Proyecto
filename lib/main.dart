@@ -86,9 +86,10 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       // Lógica de navegación condicional basada en el estado de autenticación
-      home: supabase.auth.currentSession == null
-          ? const HomeScreen()
-          : const ProfilePage(),
+      home:
+          supabase.auth.currentSession == null
+              ? const HomeScreen()
+              : const ProfilePage(),
       // Rutas de navegación
       routes: {
         '/login': (context) => const LoginPage(),
@@ -99,17 +100,28 @@ class _MyAppState extends State<MyApp> {
         '/contact': (context) => const ContactScreen(),
         // Ruta para el dashboard del profesor
         '/dashboard': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          print('Entrando a la ruta /dashboard');
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>?;
+          print('Argumentos recibidos: $args');
           final idSupervisor = args?['id_supervisor'];
+          print('idSupervisor extraído: $idSupervisor');
           if (idSupervisor == null) {
+            print('No se proporcionó ID de supervisor');
             return const Scaffold(
-              body: Center(child: Text('Error: No se proporcionó ID de supervisor')),
+              body: Center(
+                child: Text('Error: No se proporcionó ID de supervisor'),
+              ),
             );
           }
+          print('Navegando a ProfessorDashboardScreen con id: $idSupervisor');
           return ProfessorDashboardScreen(professorId: idSupervisor);
         },
         '/horas_estudiante': (context) {
-          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>?;
           final idEstudiante = args?['idEstudiante'];
           if (idEstudiante == null) {
             return const Scaffold(
@@ -125,9 +137,7 @@ class _MyAppState extends State<MyApp> {
         '/reset-password': (context) {
           final uri = Uri.base;
           final codeFromUrl = uri.queryParameters['code'];
-          return ResetPasswordPage(
-            code: codeFromUrl,
-          );
+          return ResetPasswordPage(code: codeFromUrl);
         },
       },
     );
@@ -139,9 +149,10 @@ extension ContextExtension on BuildContext {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError
-            ? const Color.fromARGB(255, 211, 47, 47)
-            : const Color.fromARGB(255, 76, 175, 80),
+        backgroundColor:
+            isError
+                ? const Color.fromARGB(255, 211, 47, 47)
+                : const Color.fromARGB(255, 76, 175, 80),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),

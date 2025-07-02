@@ -332,6 +332,33 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              // Nuevo botón para ir al Dashboard de Profesor
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 16.0,
+                ),
+                child: Center(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final String? tuIdSupervisor = Supabase.instance.client.auth.currentUser?.id;
+                      if (tuIdSupervisor != null) {
+                        Navigator.pushNamed(
+                          context,
+                          '/dashboard',
+                          arguments: {'id_supervisor': tuIdSupervisor},
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No se pudo obtener el ID del profesor.')),
+                        );
+                      }
+                    },
+                    child: const Text('Ir al Dashboard de Profesor'),
+                  ),
+                ),
+              ),
+
               CustomFooter(
                 textColor: _darkMode ? Colors.white : Colors.black,
                 backgroundColor:
