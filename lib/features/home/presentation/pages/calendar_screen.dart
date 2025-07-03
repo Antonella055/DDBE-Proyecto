@@ -6,7 +6,6 @@ import 'package:ayudantia_software/features/home/presentation/widgets/custom_foo
 import 'package:ayudantia_software/features/home/presentation/widgets/activity_calendar.dart'; // Importa el calendario de actividades
 import 'package:ayudantia_software/features/home/presentation/widgets/accesibility_drawer.dart'; // Importa el Drawer de accesibilidad
 
-
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -29,14 +28,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   final SupabaseClient _supabaseClient = supabase; // Instancia de Supabase
 
   // Getter para el color de fondo de la pantalla
-  Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
+  Color get _backgroundColor =>
+      _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
 
   // Getter para el color del texto principal
   Color get _textColor => _darkMode ? Colors.white : Colors.black;
 
   // Getter para el color de la AppBar (si quieres que cambie con el contraste)
-  Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
-
+  Color get _appBarColor =>
+      _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
 
   void _onProfileIconPressed() {
     if (_supabaseClient.auth.currentUser == null) {
@@ -85,16 +85,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: ActivityCalendar(
                   textColor: _textColor,
-                  backgroundColor: _darkMode ? Colors.grey[800]! : Colors.white, // Fondo del calendario
+                  backgroundColor:
+                      _darkMode
+                          ? Colors.grey[800]!
+                          : Colors.white, // Fondo del calendario
                 ),
               ),
               const SizedBox(height: 32.0),
               CustomFooter(
                 textColor: _textColor,
-                backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!, // Fondo del footer
+                backgroundColor:
+                    _darkMode
+                        ? Colors.grey[800]!
+                        : Colors.grey[200]!, // Fondo del footer
               ),
             ],
           ),
@@ -117,7 +126,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _lightBackground = !value;
           });
         },
-        onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
+        onUnderlineLinksChanged:
+            (value) => setState(() => _underlineLinks = value),
         onReadableFontChanged: (value) => setState(() => _readableFont = value),
         onGrayscaleChanged: (value) {
           setState(() {
@@ -139,7 +149,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
         },
         onReset: _resetAccessibilitySettings,
         appBarColor: _appBarColor,
-        linkTextColor: _darkMode ? Colors.white : Colors.blue, // Asegúrate de que este color se mantenga si es necesario para el Drawer
+        linkTextColor:
+            _darkMode
+                ? Colors.white
+                : Colors
+                    .blue, // Asegúrate de que este color se mantenga si es necesario para el Drawer
       ),
     );
   }
