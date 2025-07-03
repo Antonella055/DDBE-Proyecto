@@ -15,6 +15,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   currentRoute; // Añadimos esta propiedad para saber la ruta actual
   final VoidCallback? onProfileIconPressed;
   final List<Widget>? actions; // <--- Agrega esto
+  final bool isProfessor; // <--- Agrega esto
 
   const CustomAppBar({
     super.key,
@@ -22,6 +23,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.currentRoute, // Ahora es un parámetro requerido
     this.onProfileIconPressed,
     this.actions, // <--- Agrega esto
+    this.isProfessor = false, // <--- Agrega esto
   });
 
   static final SupabaseService _supabaseService = SupabaseService();
@@ -220,7 +222,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: isCurrentRoute ? kOrangeColor : const Color.fromARGB(255, 59, 59, 59),
+              color:
+                  isCurrentRoute
+                      ? kOrangeColor
+                      : const Color.fromARGB(255, 59, 59, 59),
               fontWeight: FontWeight.w500,
               fontSize: 16,
               fontFamily: 'Roboto',
@@ -228,7 +233,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           onSelected: (value) {
             if (value == 'horas_culminadas') {
-              final String? idEstudiante = Supabase.instance.client.auth.currentUser?.id;
+              final String? idEstudiante =
+                  Supabase.instance.client.auth.currentUser?.id;
               if (idEstudiante != null) {
                 Navigator.of(context).pushNamed(
                   '/horas_estudiante',
@@ -236,19 +242,41 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No se pudo obtener el ID del estudiante.')),
+                  const SnackBar(
+                    content: Text('No se pudo obtener el ID del estudiante.'),
+                  ),
+                );
+              }
+            } else if (value == 'dashboard_profesor') {
+              final String? tuIdSupervisor =
+                  Supabase.instance.client.auth.currentUser?.id;
+              if (tuIdSupervisor != null) {
+                Navigator.of(context).pushNamed(
+                  '/dashboard',
+                  arguments: {'id_supervisor': tuIdSupervisor},
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No se pudo obtener el ID del profesor.'),
+                  ),
                 );
               }
             }
-            // Puedes agregar más opciones aquí si lo deseas
           },
-          itemBuilder: (context) => [
-            const PopupMenuItem<String>(
-              value: 'horas_culminadas',
-              child: Text('Ver horas culminadas'),
-            ),
-            // Otros PopupMenuItem si quieres más opciones
-          ],
+          itemBuilder:
+              (context) => [
+                const PopupMenuItem<String>(
+                  value: 'horas_culminadas',
+                  child: Text('Ver horas culminadas'),
+                ),
+                if (isProfessor)
+                  const PopupMenuItem<String>(
+                    value: 'dashboard_profesor',
+                    child: Text('Ir al Dashboard de Profesor'),
+                  ),
+                // Otros PopupMenuItem si quieres más opciones
+              ],
         ),
       );
     }
@@ -263,7 +291,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: isCurrentRoute ? kOrangeColor : const Color.fromARGB(255, 59, 59, 59),
+            color:
+                isCurrentRoute
+                    ? kOrangeColor
+                    : const Color.fromARGB(255, 59, 59, 59),
             fontWeight: FontWeight.w500,
             fontSize: 16,
             fontFamily: 'Roboto',

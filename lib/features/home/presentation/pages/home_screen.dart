@@ -29,19 +29,26 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _negativeContrast = false;
   bool _lightBackground = true; // Por defecto, fondo claro
 
+  // Variables para el rol de usuario
+  bool _isProfessor = false;
+  bool _isLoadingRole = true;
+
   final SupabaseService _supabaseService = SupabaseService();
   final SupabaseClient _supabaseClient = supabase;
 
   // Estilos de texto adaptables
   TextStyle get _textStyle => TextStyle(
-        fontSize: _fontSize,
-        fontFamily: _readableFont ? 'Roboto' : 'Roboto',
-        color: _darkMode ? Colors.white : Colors.black,
-        decoration: _underlineLinks ? TextDecoration.underline : TextDecoration.none,
-      );
+    fontSize: _fontSize,
+    fontFamily: _readableFont ? 'Roboto' : 'Roboto',
+    color: _darkMode ? Colors.white : Colors.black,
+    decoration:
+        _underlineLinks ? TextDecoration.underline : TextDecoration.none,
+  );
 
-  Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
-  Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
+  Color get _backgroundColor =>
+      _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
+  Color get _appBarColor =>
+      _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
   Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue;
 
   void _onProfileIconPressed() {
@@ -66,6 +73,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _checkIfProfessor();
+  }
+
+  Future<void> _checkIfProfessor() async {
+    final String? userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      final result =
+          await Supabase.instance.client
+              .from('professors')
+              .select()
+              .eq('ID', userId) // Usa el nombre correcto aquí
+              .maybeSingle();
+      setState(() {
+        _isProfessor = result != null;
+        _isLoadingRole = false;
+      });
+    } else {
+      setState(() {
+        _isProfessor = false;
+        _isLoadingRole = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     bool isLargeScreen = MediaQuery.of(context).size.width > 600;
 
@@ -75,32 +109,50 @@ class _HomeScreenState extends State<HomeScreen> {
         scaffoldKey: _scaffoldKey,
         currentRoute: '/',
         onProfileIconPressed: _onProfileIconPressed,
+        isProfessor: _isProfessor, // <--- Aquí
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'horas_culminadas') {
                 final String? idEstudiante = Supabase.instance.client.auth.currentUser?.id;
                 if (idEstudiante != null) {
-                  Navigator.pushNamed(
-                    context,
+                  Navigator.of(context).pushNamed(
                     '/horas_estudiante',
                     arguments: {'idEstudiante': idEstudiante},
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No se pudo obtener el ID del estudiante.')),
+                    const SnackBar(
+                      content: Text('No se pudo obtener el ID del estudiante.'),
+                    ),
+                  );
+                }
+              } else if (value == 'dashboard_profesor') {
+                final String? tuIdSupervisor = Supabase.instance.client.auth.currentUser?.id;
+                if (tuIdSupervisor != null) {
+                  Navigator.of(context).pushNamed(
+                    '/dashboard',
+                    arguments: {'id_supervisor': tuIdSupervisor},
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No se pudo obtener el ID del profesor.')),
                   );
                 }
               }
-              // Puedes agregar más opciones aquí si lo deseas
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'horas_culminadas',
-                child: Text('Ver horas culminadas'),
-              ),
-              // Otros PopupMenuItem si quieres más opciones
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem<String>(
+                    value: 'horas_culminadas',
+                    child: Text('Ver horas culminadas'),
+                  ),
+                  if (_isProfessor)
+                    const PopupMenuItem<String>(
+                      value: 'dashboard_profesor',
+                      child: Text('Ir al Dashboard de Profesor'),
+                    ),
+                ],
           ),
         ],
       ),
@@ -112,7 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Sección principal con márgenes aumentados
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 32.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -137,7 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: _linkTextColor,
                                     size: 30,
                                   ),
-                                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                                  onPressed:
+                                      () =>
+                                          _scaffoldKey.currentState
+                                              ?.openEndDrawer(),
                                 ),
                               ),
                             ),
@@ -157,7 +215,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: _textStyle.copyWith(
                               fontSize: _fontSize + 4,
                               fontWeight: FontWeight.w500,
-                              color: _darkMode ? Colors.grey[400] : Colors.grey[700],
+                              color:
+                                  _darkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                             ),
                           ),
                         ],
@@ -169,33 +230,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen1.jpg'),
+                          _supabaseService.getPublicImageUrl(
+                            'images',
+                            'upload/imagen1.jpg',
+                          ),
                           fit: BoxFit.cover,
                           height: 200,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: _darkMode ? Colors.grey[600] : Colors.grey[300],
-                            child: Center(
-                              child: Text(
-                                'Error al cargar imagen1.jpg',
-                                style: _textStyle.copyWith(
-                                  color: _darkMode ? Colors.redAccent : Colors.red,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                height: 200,
+                                color:
+                                    _darkMode
+                                        ? Colors.grey[600]
+                                        : Colors.grey[300],
+                                child: Center(
+                                  child: Text(
+                                    'Error al cargar imagen1.jpg',
+                                    style: _textStyle.copyWith(
+                                      color:
+                                          _darkMode
+                                              ? Colors.redAccent
+                                              : Colors.red,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ),
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          loadingBuilder: (
+                            BuildContext context,
+                            Widget child,
+                            ImageChunkEvent? loadingProgress,
+                          ) {
                             if (loadingProgress == null) return child;
                             return Container(
                               height: 200,
-                              color: _darkMode ? Colors.grey[700] : Colors.grey[200],
+                              color:
+                                  _darkMode
+                                      ? Colors.grey[700]
+                                      : Colors.grey[200],
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_appBarColor),
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _appBarColor,
+                                  ),
                                 ),
                               ),
                             );
@@ -209,7 +293,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Sección de "Dependencia adscrita"
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 32.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -218,33 +305,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen2.jpg'),
+                          _supabaseService.getPublicImageUrl(
+                            'images',
+                            'upload/imagen2.jpg',
+                          ),
                           fit: BoxFit.cover,
                           height: 200,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: _darkMode ? Colors.grey[600] : Colors.grey[300],
-                            child: Center(
-                              child: Text(
-                                'Error al cargar imagen2.jpg',
-                                style: _textStyle.copyWith(
-                                  color: _darkMode ? Colors.redAccent : Colors.red,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                height: 200,
+                                color:
+                                    _darkMode
+                                        ? Colors.grey[600]
+                                        : Colors.grey[300],
+                                child: Center(
+                                  child: Text(
+                                    'Error al cargar imagen2.jpg',
+                                    style: _textStyle.copyWith(
+                                      color:
+                                          _darkMode
+                                              ? Colors.redAccent
+                                              : Colors.red,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ),
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          loadingBuilder: (
+                            BuildContext context,
+                            Widget child,
+                            ImageChunkEvent? loadingProgress,
+                          ) {
                             if (loadingProgress == null) return child;
                             return Container(
                               height: 200,
-                              color: _darkMode ? Colors.grey[700] : Colors.grey[200],
+                              color:
+                                  _darkMode
+                                      ? Colors.grey[700]
+                                      : Colors.grey[200],
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_appBarColor),
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _appBarColor,
+                                  ),
                                 ),
                               ),
                             );
@@ -258,7 +368,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Dependencia adscrita al Decanato de Estudiantes'),
+                          _buildSectionTitle(
+                            'Dependencia adscrita al Decanato de Estudiantes',
+                          ),
                           const SizedBox(height: 16),
                           _buildParagraph(
                             'La Dirección de Desarrollo y Bienestar Estudiantil (DDBE) tiene como función principal '
@@ -281,34 +393,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Botón para ir al Dashboard de Profesor
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
-                child: Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final String? tuIdSupervisor = Supabase.instance.client.auth.currentUser?.id;
-                      if (tuIdSupervisor != null) {
-                        Navigator.pushNamed(
-                          context,
-                          '/dashboard',
-                          arguments: {'id_supervisor': tuIdSupervisor},
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No se pudo obtener el ID del profesor.')),
-                        );
-                      }
-                    },
-                    child: const Text('Ir al Dashboard de Profesor'),
+              // Indicador de carga o contenido
+              if (_isLoadingRole)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32.0),
+                    child: CircularProgressIndicator(),
                   ),
+                )
+              else ...[
+                // El resto de tus widgets, por ejemplo:
+                CustomFooter(
+                  textColor: _darkMode ? Colors.white : Colors.black,
+                  backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
                 ),
-              ),
-
-              CustomFooter(
-                textColor: _darkMode ? Colors.white : Colors.black,
-                backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
-              ),
+              ],
             ],
           ),
         ),
@@ -330,7 +429,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _lightBackground = !value;
           });
         },
-        onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
+        onUnderlineLinksChanged:
+            (value) => setState(() => _underlineLinks = value),
         onReadableFontChanged: (value) => setState(() => _readableFont = value),
         onGrayscaleChanged: (value) {
           setState(() {
