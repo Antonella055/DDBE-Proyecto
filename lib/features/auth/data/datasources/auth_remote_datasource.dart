@@ -31,6 +31,14 @@ abstract class AuthRemoteDataSource {
   Future<User?> signInWithEmailAndPassword(String email, String password);
   Future<User?> signUpWithEmailAndPassword(String email, String password);
   Future<void> signOut();
+
+  Future<void> sendPasswordResetEmail(String email);
+  Future<void> confirmPasswordReset({
+    required String newPassword,
+    required String token,
+  });
+  Future<void> verifyPasswordResetToken(String token);
+  Future<void> updatePassword(String newPassword);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -336,4 +344,68 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw ServerException(message: 'Error al actualizar el administrador: $e');
       }
     }
+    
+    @override
+    Future<void> sendPasswordResetEmail(String email) async {
+      try {
+        await supabaseClient.auth.resetPasswordForEmail(
+          email,
+          redirectTo: 'ayudantia-unimet://reset-password', // Para móvil
+        );
+      } on AuthException catch (e) {
+        throw AuthExceptionCustom(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al enviar correo de recuperación');
+      }
+    }
+    
+
+    @override
+    Future<void> confirmPasswordReset({
+      required String newPassword,
+      required String token,
+    }) async {
+      try {
+        // Verificar el token primero
+        final response = await supabaseClient.auth.verifyOTP(
+          token: token,
+          type: OtpType.recovery,
+        );
+
+        if (response.session == null) {
+          throw AuthExceptionCustom(message: 'Token inválido o expirado');
+        }
+
+        // Actualizar la contraseña
+        await supabaseClient.auth.updateUser(
+          UserAttributes(password: newPassword),
+        );
+      } on AuthException catch (e) {
+        throw AuthExceptionCustom(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al confirmar el reset de contraseña');
+      }
+    }
+
+    @override
+    Future<void> updatePassword(String newPassword) async {
+      try {
+        await supabaseClient.auth.updateUser(
+          UserAttributes(password: newPassword),
+        );
+      } on AuthException catch (e) {
+        throw AuthExceptionCustom(message: e.message);
+      } catch (e) {
+        throw ServerException(message: 'Error al actualizar contraseña');
+      }
+    }
+    
+      @override
+      Future<void> verifyPasswordResetToken(String token) {
+    // TODO: implement verifyPasswordResetToken
+    throw UnimplementedError();
+      }
+    
+    
+      
 }
