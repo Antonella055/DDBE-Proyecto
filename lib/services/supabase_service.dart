@@ -256,19 +256,21 @@ class SupabaseService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getStudentsByProfessorId(String professorId) async {
+  Future<List<Map<String, dynamic>>> getStudentsByProfessorId(
+    String professorId,
+  ) async {
     try {
       final List<Map<String, dynamic>> response = await _supabase
           .from('students')
           .select('*, profiles(full_name, email)')
-          .eq('id_supervisor', professorId)
-          .order('created_at', ascending: true);
+          .eq('id_supervisor', professorId);
 
       print('Supabase response for students: $response'); // <- Añade esto
 
       return response.map((student) {
         print('Processing student: $student'); // <- Añade esto
-        final Map<String, dynamic>? profile = student['profiles'] as Map<String, dynamic>?;
+        final Map<String, dynamic>? profile =
+            student['profiles'] as Map<String, dynamic>?;
         print('Profile part: $profile'); // <- Añade esto
 
         if (profile != null) {
@@ -280,7 +282,6 @@ class SupabaseService {
         }
         return student;
       }).toList();
-
     } catch (e) {
       print('Error al obtener estudiantes: $e');
       return [];
