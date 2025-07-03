@@ -265,13 +265,13 @@ class SupabaseService {
           .select('*, profiles(full_name, email)')
           .eq('id_supervisor', professorId);
 
-      print('Supabase response for students: $response'); // <- Añade esto
+      print('Supabase response for students: $response');
 
       return response.map((student) {
-        print('Processing student: $student'); // <- Añade esto
+        print('Processing student: $student');
         final Map<String, dynamic>? profile =
             student['profiles'] as Map<String, dynamic>?;
-        print('Profile part: $profile'); // <- Añade esto
+        print('Profile part: $profile');
 
         if (profile != null) {
           student['full_name'] = profile['full_name'];
