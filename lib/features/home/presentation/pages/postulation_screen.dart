@@ -64,7 +64,6 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
         scaffoldKey: _scaffoldKey, // Pass the scaffold key
         currentRoute: '/ayudantia', // ¡Aquí se pasa la ruta actual, que es '/ayudantia'!
         onProfileIconPressed: _onProfileIconPressed, // Pass the callback
-        linkTextColor: Colors.orange, // Add the required linkTextColor argument
         // No es necesario pasar hasDropdown para "Más" si ya no tiene dropdown
       ),
       body: Padding(
@@ -149,10 +148,7 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
                         Navigator.of(context).pushNamed('/help');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
-                              context,
-                            ).primaryColor, // Usar el color primario del tema
+                        backgroundColor:Theme.of(context).primaryColor, // Usar el color primario del tema
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 30,
