@@ -71,6 +71,7 @@ class _LoginPageState extends State<LoginPage> {
                 keyboardType: TextInputType.emailAddress,
               ),
             ],
+
           ),
           actions: [
             TextButton(
@@ -129,7 +130,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    const String backgroundUrl = 'https://lbxkcilriktsmfiruvfj.supabase.co/storage/v1/object/public/backgrounds/backgrounds/loginpage_background.jpg';
+    const String backgroundUrl =
+        'https://lbxkcilriktsmfiruvfj.supabase.co/storage/v1/object/public/backgrounds/backgrounds/loginpage_background.jpg';
 
     return Scaffold(
       body: Stack(
@@ -138,14 +140,16 @@ class _LoginPageState extends State<LoginPage> {
           Image.network(
             backgroundUrl,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: Colors.grey,
-              child: const Center(child: Icon(Icons.broken_image, size: 60)),
-            ),
+            errorBuilder:
+                (context, error, stackTrace) => Container(
+                  color: Colors.grey,
+                  child: const Center(
+                    child: Icon(Icons.broken_image, size: 60),
+                  ),
+                ),
           ),
-          Container(
-            color: Colors.black.withOpacity(0.2),
-          ),
+          Container(color: Colors.black.withOpacity(0.2)),
+          // Botón de volver en la esquina superior izquierda
           Positioned(
             top: 24,
             left: 24,
@@ -167,6 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
                     color: const Color(0xFF003087),
+
                     width: 2,
                   ),
                   boxShadow: [
@@ -177,16 +182,21 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 36,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Iniciar sesión',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: const Color(0xFFFF8000),
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall?.copyWith(
+                        color: const Color(0xFFFF8000),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Icon(Icons.g_mobiledata, color: Colors.red, size: 48),
@@ -267,16 +277,17 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Ingresar'),
+                        child:
+                            _isLoading
+                                ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Text('Ingresar'),
                       ),
                     ),
                   ],
@@ -296,3 +307,4 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 }
+

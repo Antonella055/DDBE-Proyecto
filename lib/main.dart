@@ -10,7 +10,10 @@ import 'package:ayudantia_software/features/home/presentation/pages/home_screen.
 import 'package:ayudantia_software/features/home/presentation/pages/news_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/contact_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/calendar_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/professor_dashboard_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/horas_culminadas_screen.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/postulation_screen.dart';
+import 'package:ayudantia_software/features/home/presentation/pages/chat_page.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/help_request_screen.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_student.dart';
 
@@ -36,6 +39,7 @@ Future<void> main() async {
     ),
   );
   
+
   runApp(const MyApp());
 }
 
@@ -94,11 +98,48 @@ class _MyAppState extends State<MyApp> {
         '/news': (context) => const NewsScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/contact': (context) => const ContactScreen(),
+        // Ruta para el dashboard del profesor
+        '/dashboard': (context) {
+          print('Entrando a la ruta /dashboard');
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>?;
+          print('Argumentos recibidos: $args');
+          final idSupervisor = args?['id_supervisor'];
+          print('idSupervisor extraído: $idSupervisor');
+          if (idSupervisor == null) {
+            print('No se proporcionó ID de supervisor');
+            return const Scaffold(
+              body: Center(
+                child: Text('Error: No se proporcionó ID de supervisor'),
+              ),
+            );
+          }
+          print('Navegando a ProfessorDashboardScreen con id: $idSupervisor');
+          return ProfessorDashboardScreen(professorId: idSupervisor);
+        },
+        '/horas_estudiante': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>?;
+          final idEstudiante = args?['idEstudiante'];
+          if (idEstudiante == null) {
+            return const Scaffold(
+              body: Center(child: Text('No se proporcionó idEstudiante')),
+            );
+          }
+          return HorasCulminadasScreen(estudianteId: idEstudiante);
+        },
         '/postulation': (context) => const AyudantiaPage(),
+        '/chat': (context) => const ChatPage(),
         '/create-student': (context) => const AdminCreateStudent(),
         '/create-professor': (context) => const AdminCreateProfessor(),
         '/help': (context) => const HelpRequestScreen(),
-        
+        '/reset-password': (context) {
+          final uri = Uri.base;
+          final codeFromUrl = uri.queryParameters['code'];
+          return ResetPasswordPage(code: codeFromUrl);
+        },
       },
     );
   }
@@ -109,9 +150,10 @@ extension ContextExtension on BuildContext {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError
-            ? const Color.fromARGB(255, 211, 47, 47)
-            : const Color.fromARGB(255, 76, 175, 80),
+        backgroundColor:
+            isError
+                ? const Color.fromARGB(255, 211, 47, 47)
+                : const Color.fromARGB(255, 76, 175, 80),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),

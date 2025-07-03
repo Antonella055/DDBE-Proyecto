@@ -24,27 +24,33 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _readableFont = true;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // ¡Nuevas variables de estado para los modos de color/contraste!
+  // Nuevas variables de estado para los modos de color/contraste
   bool _grayscale = false;
   bool _negativeContrast = false;
   bool _lightBackground = true; // Por defecto, fondo claro
+
+  // Variables para el rol de usuario
+  bool _isProfessor = false;
+  bool _isLoadingRole = true;
 
   final SupabaseService _supabaseService = SupabaseService();
   final SupabaseClient _supabaseClient = supabase;
 
   // Estilos de texto adaptables
   TextStyle get _textStyle => TextStyle(
-        fontSize: _fontSize,
-        fontFamily: _readableFont ? 'Arial' : 'Roboto',
-        color: _darkMode ? Colors.white : Colors.black, // Color adaptable al modo oscuro
-        decoration: _underlineLinks ? TextDecoration.underline : TextDecoration.none,
-      );
+    fontSize: _fontSize,
+    fontFamily: _readableFont ? 'Roboto' : 'Roboto',
+    color: _darkMode ? Colors.white : Colors.black,
+    decoration:
+        _underlineLinks ? TextDecoration.underline : TextDecoration.none,
+  );
 
-  Color get _backgroundColor => _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
-  Color get _appBarColor => _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
-  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue; // Color adaptable al modo oscuro
+  Color get _backgroundColor =>
+      _darkMode ? Colors.grey[900]! : Colors.grey[50]!;
+  Color get _appBarColor =>
+      _highContrast ? const Color(0xFFF57C00) : const Color(0xFF673AB7);
+  Color get _linkTextColor => _darkMode ? Colors.white : Colors.blue;
 
-  // Método para manejar la acción del icono de perfil
   void _onProfileIconPressed() {
     if (_supabaseClient.auth.currentUser == null) {
       Navigator.of(context).pushNamed('/login');
@@ -53,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Método para restablecer las configuraciones de accesibilidad
   void _resetAccessibilitySettings() {
     setState(() {
       _fontSize = 16.0;
@@ -61,11 +66,37 @@ class _HomeScreenState extends State<HomeScreen> {
       _darkMode = false;
       _underlineLinks = false;
       _readableFont = true;
-      // Reiniciar los nuevos estados
       _grayscale = false;
       _negativeContrast = false;
       _lightBackground = true;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfProfessor();
+  }
+
+  Future<void> _checkIfProfessor() async {
+    final String? userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      final result =
+          await Supabase.instance.client
+              .from('professors')
+              .select()
+              .eq('ID', userId) // Usa el nombre correcto aquí
+              .maybeSingle();
+      setState(() {
+        _isProfessor = result != null;
+        _isLoadingRole = false;
+      });
+    } else {
+      setState(() {
+        _isProfessor = false;
+        _isLoadingRole = false;
+      });
+    }
   }
 
   @override
@@ -76,18 +107,67 @@ class _HomeScreenState extends State<HomeScreen> {
       key: _scaffoldKey,
       appBar: CustomAppBar(
         scaffoldKey: _scaffoldKey,
-        linkTextColor: _linkTextColor,
+        currentRoute: '/',
         onProfileIconPressed: _onProfileIconPressed,
+        isProfessor: _isProfessor, // <--- Aquí
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'horas_culminadas') {
+                final String? idEstudiante = Supabase.instance.client.auth.currentUser?.id;
+                if (idEstudiante != null) {
+                  Navigator.of(context).pushNamed(
+                    '/horas_estudiante',
+                    arguments: {'idEstudiante': idEstudiante},
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No se pudo obtener el ID del estudiante.'),
+                    ),
+                  );
+                }
+              } else if (value == 'dashboard_profesor') {
+                final String? tuIdSupervisor = Supabase.instance.client.auth.currentUser?.id;
+                if (tuIdSupervisor != null) {
+                  Navigator.of(context).pushNamed(
+                    '/dashboard',
+                    arguments: {'id_supervisor': tuIdSupervisor},
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No se pudo obtener el ID del profesor.')),
+                  );
+                }
+              }
+            },
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem<String>(
+                    value: 'horas_culminadas',
+                    child: Text('Ver horas culminadas'),
+                  ),
+                  if (_isProfessor)
+                    const PopupMenuItem<String>(
+                      value: 'dashboard_profesor',
+                      child: Text('Ir al Dashboard de Profesor'),
+                    ),
+                ],
+          ),
+        ],
       ),
       body: Container(
-        color: _backgroundColor, // Usar el color de fondo adaptable
+        color: _backgroundColor,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Sección principal con márgenes aumentados
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 32.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -103,12 +183,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: 50,
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: _appBarColor, // Color adaptable al modo oscuro/alto contraste
+                                  color: _appBarColor,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: IconButton(
-                                  icon: Icon(Icons.accessibility_new, color: _linkTextColor, size: 30), // Color adaptable
-                                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                                  icon: Icon(
+                                    Icons.accessibility_new,
+                                    color: _linkTextColor,
+                                    size: 30,
+                                  ),
+                                  onPressed:
+                                      () =>
+                                          _scaffoldKey.currentState
+                                              ?.openEndDrawer(),
                                 ),
                               ),
                             ),
@@ -118,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: _textStyle.copyWith(
                               fontSize: _fontSize + 20,
                               fontWeight: FontWeight.w600,
-                              color: _darkMode ? Colors.white : Colors.black87, // Color adaptable
+                              color: _darkMode ? Colors.white : Colors.black87,
                               height: 1.2,
                             ),
                           ),
@@ -128,7 +215,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: _textStyle.copyWith(
                               fontSize: _fontSize + 4,
                               fontWeight: FontWeight.w500,
-                              color: _darkMode ? Colors.grey[400] : Colors.grey[700], // Color adaptable
+                              color:
+                                  _darkMode
+                                      ? Colors.grey[400]
+                                      : Colors.grey[700],
                             ),
                           ),
                         ],
@@ -140,31 +230,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen1.jpg'),
+                          _supabaseService.getPublicImageUrl(
+                            'images',
+                            'upload/imagen1.jpg',
+                          ),
                           fit: BoxFit.cover,
                           height: 200,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200,
-                            color: _darkMode ? Colors.grey[600] : Colors.grey[300], // Color de error adaptable
-                            child: Center(
-                              child: Text(
-                                'Error al cargar imagen1.jpg',
-                                style: _textStyle.copyWith(color: _darkMode ? Colors.redAccent : Colors.red), // Color adaptable
-                                textAlign: TextAlign.center,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                height: 200,
+                                color:
+                                    _darkMode
+                                        ? Colors.grey[600]
+                                        : Colors.grey[300],
+                                child: Center(
+                                  child: Text(
+                                    'Error al cargar imagen1.jpg',
+                                    style: _textStyle.copyWith(
+                                      color:
+                                          _darkMode
+                                              ? Colors.redAccent
+                                              : Colors.red,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          loadingBuilder: (
+                            BuildContext context,
+                            Widget child,
+                            ImageChunkEvent? loadingProgress,
+                          ) {
                             if (loadingProgress == null) return child;
                             return Container(
                               height: 200,
-                              color: _darkMode ? Colors.grey[700] : Colors.grey[200], // Fondo mientras carga adaptable
+                              color:
+                                  _darkMode
+                                      ? Colors.grey[700]
+                                      : Colors.grey[200],
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_appBarColor), // Color del indicador adaptable
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _appBarColor,
+                                  ),
                                 ),
                               ),
                             );
@@ -178,7 +293,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // Sección de "Dependencia adscrita"
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 32.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 32.0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -187,30 +305,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          _supabaseService.getPublicImageUrl('images', 'upload/imagen2.jpg'),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 200, // Asegura una altura para el contenedor de error
-                            color: _darkMode ? Colors.grey[600] : Colors.grey[300], // Color de error adaptable
-                            child: Center(
-                              child: Text(
-                                'Error al cargar imagen2.jpg',
-                                style: _textStyle.copyWith(color: _darkMode ? Colors.redAccent : Colors.red), // Color adaptable
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
+                          _supabaseService.getPublicImageUrl(
+                            'images',
+                            'upload/imagen2.jpg',
                           ),
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          fit: BoxFit.cover,
+                          height: 200,
+                          errorBuilder:
+                              (context, error, stackTrace) => Container(
+                                height: 200,
+                                color:
+                                    _darkMode
+                                        ? Colors.grey[600]
+                                        : Colors.grey[300],
+                                child: Center(
+                                  child: Text(
+                                    'Error al cargar imagen2.jpg',
+                                    style: _textStyle.copyWith(
+                                      color:
+                                          _darkMode
+                                              ? Colors.redAccent
+                                              : Colors.red,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          loadingBuilder: (
+                            BuildContext context,
+                            Widget child,
+                            ImageChunkEvent? loadingProgress,
+                          ) {
                             if (loadingProgress == null) return child;
                             return Container(
-                              height: 200, // Asegura una altura para el contenedor de carga
-                              color: _darkMode ? Colors.grey[700] : Colors.grey[200], // Fondo mientras carga adaptable
+                              height: 200,
+                              color:
+                                  _darkMode
+                                      ? Colors.grey[700]
+                                      : Colors.grey[200],
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_appBarColor), // Color del indicador adaptable
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _appBarColor,
+                                  ),
                                 ),
                               ),
                             );
@@ -224,20 +368,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('Dependencia adscrita al Decanato de Estudiantes'),
+                          _buildSectionTitle(
+                            'Dependencia adscrita al Decanato de Estudiantes',
+                          ),
                           const SizedBox(height: 16),
                           _buildParagraph(
-                              'La Dirección de Desarrollo y Bienestar Estudiantil (DDBE) tiene como función principal '
-                              'dirigir, planificar, controlar y evaluar los programas orientados a la atención integral '
-                              'de la población estudiantil en los aspectos de crecimiento, desarrollo personal y '
-                              'asesoramiento psicológico, garantizando la adecuada proyección de los recursos '
-                              'necesarios para el logro de los objetivos estratégicos del año de Rectoría de la '
-                              'Universidad acordes con los indicadores de bienestar y retención estudiantil previstos '
-                              'por la institución y siguiendo los lineamientos del Decanato de Estudiantes.'),
+                            'La Dirección de Desarrollo y Bienestar Estudiantil (DDBE) tiene como función principal '
+                            'dirigir, planificar, controlar y evaluar los programas orientados a la atención integral '
+                            'de la población estudiantil en los aspectos de crecimiento, desarrollo personal y '
+                            'asesoramiento psicológico, garantizando la adecuada proyección de los recursos '
+                            'necesarios para el logro de los objetivos estratégicos del año de Rectoría de la '
+                            'Universidad acordes con los indicadores de bienestar y retención estudiantil previstos '
+                            'por la institución y siguiendo los lineamientos del Decanato de Estudiantes.',
+                          ),
                           const SizedBox(height: 16),
                           _buildParagraph(
-                              'Asimismo, cuenta con la Gerencia de Asesoramiento y Desarrollo Estudiantil, y la '
-                              'Gerencia de Atención Socioeconómica Estudiantil.'),
+                            'Asimismo, cuenta con la Gerencia de Asesoramiento y Desarrollo Estudiantil, y la '
+                            'Gerencia de Atención Socioeconómica Estudiantil.',
+                          ),
                         ],
                       ),
                     ),
@@ -245,62 +393,66 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              CustomFooter(
-                textColor: _darkMode ? Colors.white : Colors.black,
-                backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
-              ),
+              // Indicador de carga o contenido
+              if (_isLoadingRole)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else ...[
+                // El resto de tus widgets, por ejemplo:
+                CustomFooter(
+                  textColor: _darkMode ? Colors.white : Colors.black,
+                  backgroundColor: _darkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                ),
+              ],
             ],
           ),
         ),
       ),
-
-      // ¡Aquí está la corrección para el Drawer!
       endDrawer: AccessibilityDrawer(
         fontSize: _fontSize,
         highContrast: _highContrast,
         darkMode: _darkMode,
         underlineLinks: _underlineLinks,
         readableFont: _readableFont,
-        
-        // ¡Pasar los nuevos estados!
         grayscale: _grayscale,
         negativeContrast: _negativeContrast,
         lightBackground: _lightBackground,
-
         onFontSizeChanged: (newSize) => setState(() => _fontSize = newSize),
         onHighContrastChanged: (value) => setState(() => _highContrast = value),
         onDarkModeChanged: (value) {
           setState(() {
             _darkMode = value;
-            _lightBackground = !value; // Sincroniza con el modo oscuro
+            _lightBackground = !value;
           });
         },
-        onUnderlineLinksChanged: (value) => setState(() => _underlineLinks = value),
+        onUnderlineLinksChanged:
+            (value) => setState(() => _underlineLinks = value),
         onReadableFontChanged: (value) => setState(() => _readableFont = value),
-        
-        // ¡Pasar los nuevos callbacks!
         onGrayscaleChanged: (value) {
           setState(() {
             _grayscale = value;
-            if (value) _negativeContrast = false; // Lógica de exclusión mutua
+            if (value) _negativeContrast = false;
           });
         },
         onNegativeContrastChanged: (value) {
           setState(() {
             _negativeContrast = value;
-            if (value) _grayscale = false; // Lógica de exclusión mutua
+            if (value) _grayscale = false;
           });
         },
         onLightBackgroundChanged: (value) {
           setState(() {
             _lightBackground = value;
-            _darkMode = !value; // Sincroniza con el modo oscuro
+            _darkMode = !value;
           });
         },
-        
-        onReset: _resetAccessibilitySettings, // Usar el método actualizado
-        appBarColor: _appBarColor, // Pasa el color de la AppBar (del getter)
-        linkTextColor: _linkTextColor, // Pasa el color de los enlaces (del getter)
+        onReset: _resetAccessibilitySettings,
+        appBarColor: _appBarColor,
+        linkTextColor: _linkTextColor,
       ),
     );
   }
@@ -311,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
       style: _textStyle.copyWith(
         fontWeight: FontWeight.bold,
         fontSize: _fontSize + 4,
-        color: _darkMode ? Colors.white : Colors.black87, // Color adaptable
+        color: _darkMode ? Colors.white : Colors.black87,
       ),
     );
   }
@@ -321,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
       text,
       style: _textStyle.copyWith(
         fontSize: _fontSize,
-        color: _darkMode ? Colors.white70 : Colors.black87, // Color adaptable
+        color: _darkMode ? Colors.white70 : Colors.black87,
       ),
       textAlign: TextAlign.justify,
     );
