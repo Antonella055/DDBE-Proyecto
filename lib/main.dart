@@ -1,5 +1,4 @@
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
-import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -31,12 +30,16 @@ Future<void> main() async {
     );
   }
 
-  // Inicialización de Supabase
+  // Inicialización de Supabase con configuración de autenticación
   await Supabase.initialize(
     url: 'https://lbxkcilriktsmfiruvfj.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxieGtjaWxyaWt0c21maXJ1dmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1MDA4NjYsImV4cCI6MjA2MzA3Njg2Nn0.Vtt_SYj5NWdg6j6JWcA2M_qdaPM0YhI8gcYsuG0pMSI',
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
+  
+
   runApp(const MyApp());
 }
 
@@ -85,12 +88,9 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-      // Lógica de navegación condicional basada en el estado de autenticación
-      home:
-          supabase.auth.currentSession == null
-              ? const HomeScreen()
-              : const ProfilePage(),
-      // Rutas de navegación
+      home: supabase.auth.currentSession == null
+          ? const HomeScreen()
+          : const ProfilePage(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomeScreen(),

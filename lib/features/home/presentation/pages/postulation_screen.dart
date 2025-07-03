@@ -64,6 +64,7 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
         scaffoldKey: _scaffoldKey, // Pass the scaffold key
         currentRoute: '/ayudantia', // ¡Aquí se pasa la ruta actual, que es '/ayudantia'!
         onProfileIconPressed: _onProfileIconPressed, // Pass the callback
+        linkTextColor: Colors.orange, // Add the required linkTextColor argument
         // No es necesario pasar hasDropdown para "Más" si ya no tiene dropdown
       ),
       body: Padding(
@@ -115,24 +116,29 @@ class _AyudantiaPageState extends State<AyudantiaPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
+             ElevatedButton(
+                  onPressed: () async {
+                    const url = 'https://docs.google.com/forms/d/e/1FAIpQLSfSkpc7IV0B75mk0jnXB-sy3RMgUJke9tJKQBJ76lZaPHTonw/viewform?usp=header';
+                    if (await canLaunchUrl(Uri.parse(url))) {
+                      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                    } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Botón "Conocer más" presionado.'),
+                          content: Text('No se pudo abrir el formulario.'),
                         ),
                       );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[200],
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[200],
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
                     ),
-                    child: const Text('Conocer más'),
                   ),
+                  child: const Text('Conocer más'),
+                ),
                   const SizedBox(height: 24), // Espacio antes del nuevo botón
                   // --- Nuevo Botón de "Solicitar Ayuda" ---
                   Center(

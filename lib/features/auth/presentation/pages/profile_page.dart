@@ -35,6 +35,10 @@ class _ProfilePageState extends State<ProfilePage> {
   final _admissionTrimesterController = TextEditingController();
 
   final _hireDateProfessorController = TextEditingController();
+
+  // Password change controllers
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool? _isActiveProfessor;
 
   UserProfileModel? _userProfile;
@@ -54,6 +58,11 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoadingProfile = true;
   bool _isUpdatingProfile = false;
 
+  bool _isUpdatingPassword = false;
+  String? _passwordErrorMessage;
+  String? _passwordSuccessMessage;
+  final _passwordFormKey = GlobalKey<FormState>();
+
   late final AuthRemoteDataSource _authDataSource;
 
   @override
@@ -71,10 +80,10 @@ class _ProfilePageState extends State<ProfilePage> {
     _birthDateController.dispose();
     _genderController.dispose();
     _userTypeController.dispose();
-
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     _carnetController.dispose();
     _admissionTrimesterController.dispose();
-
     _hireDateProfessorController.dispose();
 
     super.dispose();
@@ -99,6 +108,8 @@ class _ProfilePageState extends State<ProfilePage> {
           .toList();
     });
   }
+
+  
 
   Future<void> _loadUserProfile() async {
     setState(() {
@@ -470,6 +481,59 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _updatePassword() async {
+    if (!_passwordFormKey.currentState!.validate()) {
+      return;
+    }
+
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (newPassword.isEmpty || confirmPassword.isEmpty) {
+      setState(() {
+        _passwordErrorMessage = "Por favor, completa ambos campos.";
+      });
+      return;
+    }
+
+    if (newPassword != confirmPassword) {
+      setState(() {
+        _passwordErrorMessage = "Las contraseñas no coinciden.";
+      });
+      return;
+    }
+
+    setState(() {
+      _isUpdatingPassword = true;
+      _passwordErrorMessage = null;
+      _passwordSuccessMessage = null;
+    });
+
+    try {
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      setState(() {
+        _passwordSuccessMessage = "Contraseña actualizada correctamente.";
+      });
+
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
+    } on AuthException catch (e) {
+      setState(() {
+        _passwordErrorMessage = "Error: ${e.message}";
+      });
+    } catch (e) {
+      setState(() {
+        _passwordErrorMessage = "Error inesperado: $e";
+      });
+    } finally {
+      setState(() {
+        _isUpdatingPassword = false;
+      });
+    }
+  }
   Future<void> _signOut() async {
     try {
       await supabase.auth.signOut();
@@ -554,6 +618,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final String? currentUserType = _userProfile?.userType;
     final bool isStudent = currentUserType == 'Student';
@@ -575,203 +640,448 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Perfil'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pushReplacementNamed('/home');
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _signOut,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: GestureDetector(
-                onTap: _uploadAvatar,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                  backgroundImage: (_userProfile?.avatarUrl != null && _userProfile!.avatarUrl!.isNotEmpty)
-                      ? NetworkImage(_userProfile!.avatarUrl!)
-                      : null,
-                  child: (_userProfile?.avatarUrl == null || _userProfile!.avatarUrl!.isEmpty)
-                      ? Icon(
-                          Icons.camera_alt,
-                          size: 50,
-                          color: Theme.of(context).primaryColor,
-                        )
-                      : null,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              'Correo Electrónico:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF003087),
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: TextEditingController(text: _userProfile?.email ?? 'N/A'),
-              labelText: 'Email',
-              prefixIcon: Icons.email,
-              enabled: !isAdmin,
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              'Nombre Completo:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF003087),
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: _fullNameController,
-              labelText: 'Nombre Completo',
-              prefixIcon: Icons.person,
-              enabled: true,
-              maxLength: 100,
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              'Fecha de Nacimiento:',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: const Color(0xFF003087),
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            CustomTextField(
-              controller: _birthDateController,
-              labelText: 'Fecha de Nacimiento (YYYY-MM-DD)',
-              prefixIcon: Icons.calendar_today,
-              enabled: !isAdmin,
-              readOnly: true,
-            ),
-            const SizedBox(height: 20),
-
-            // ...existing code...
-          Text(
-            'Género:',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: const Color(0xFF003087),
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _genderController.text.isNotEmpty ? _genderController.text : null,
-            decoration: InputDecoration(
-              labelText: 'Género',
-              prefixIcon: const Icon(Icons.person_outline),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
-              DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-              DropdownMenuItem(value: 'Otro', child: Text('Otro')),
-            ],
-            onChanged: !isAdmin
-                ? (String? value) {
-                    setState(() {
-                      _genderController.text = value ?? '';
-                    });
-                  }
-                : null,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Por favor selecciona un género';
-              }
-              return null;
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Mi Perfil'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pushReplacementNamed('/home');
             },
           ),
-          const SizedBox(height: 20),
-          // ...existing code...
-
-            
-
-            if (isAdmin && _adminProfile != null) ...[
-              const Text(
-                'Información de Administrador',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF003087),
-                ),
-              ),
-              const SizedBox(height: 10),
-              CustomTextField(
-                controller: TextEditingController(text: _adminProfile!.idAdmin),
-                labelText: 'ID Administrador',
-                prefixIcon: Icons.badge,
-                enabled: false,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: TextEditingController(
-                  text: _adminProfile!.createdDate != null
-                      ? _adminProfile!.createdDate!.toIso8601String().split('T').first
-                      : '',
-                ),
-                labelText: 'Fecha de Creación',
-                prefixIcon: Icons.calendar_today,
-                enabled: false,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: TextEditingController(
-                  text: _adminProfile!.isActive == true ? 'Activo' : 'Inactivo',
-                ),
-                labelText: 'Estado',
-                prefixIcon: Icons.verified_user,
-                enabled: false,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: TextEditingController(text: _adminProfile!.role ?? ''),
-                labelText: 'Rol',
-                prefixIcon: Icons.security,
-                enabled: false,
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: TextEditingController(
-                  text: _adminProfile!.inactiveSince != null
-                      ? _adminProfile!.inactiveSince!.toIso8601String().split('T').first
-                      : '',
-                ),
-                labelText: 'Inactivo Desde',
-                prefixIcon: Icons.event_busy,
-                enabled: false,
-              ),
-              const SizedBox(height: 20),
-              Row(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _signOut,
+            ),
+          ],
+          bottom: const TabBar(
+          tabs: [
+            Tab(icon: Icon(Icons.person)), // Pestaña de perfil
+            Tab(icon: Icon(Icons.lock)),   // Pestaña de contraseña
+          ],
+        ),
+        ),
+        body: TabBarView(
+          children: [
+            // Profile Tab
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/create-student');
+                  Center(
+                    child: GestureDetector(
+                      onTap: _uploadAvatar,
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                        backgroundImage: (_userProfile?.avatarUrl != null && _userProfile!.avatarUrl!.isNotEmpty)
+                            ? NetworkImage(_userProfile!.avatarUrl!)
+                            : null,
+                        child: (_userProfile?.avatarUrl == null || _userProfile!.avatarUrl!.isEmpty)
+                            ? Icon(
+                                Icons.camera_alt,
+                                size: 50,
+                                color: Theme.of(context).primaryColor,
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Correo Electrónico:',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFF003087),
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    controller: TextEditingController(text: _userProfile?.email ?? 'N/A'),
+                    labelText: 'Email',
+                    prefixIcon: Icons.email,
+                    enabled: !isAdmin,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Nombre Completo:',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFF003087),
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    controller: _fullNameController,
+                    labelText: 'Nombre Completo',
+                    prefixIcon: Icons.person,
+                    enabled: true,
+                    maxLength: 100,
+                  ),
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Fecha de Nacimiento:',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFF003087),
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  CustomTextField(
+                    controller: _birthDateController,
+                    labelText: 'Fecha de Nacimiento (YYYY-MM-DD)',
+                    prefixIcon: Icons.calendar_today,
+                    enabled: !isAdmin,
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 20),
+
+                  Text(
+                    'Género:',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: const Color(0xFF003087),
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _genderController.text.isNotEmpty ? _genderController.text : null,
+                    decoration: InputDecoration(
+                      labelText: 'Género',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
+                      DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
+                      DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                    ],
+                    onChanged: !isAdmin
+                        ? (String? value) {
+                            setState(() {
+                              _genderController.text = value ?? '';
+                            });
+                          }
+                        : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor selecciona un género';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (isAdmin && _adminProfile != null) ...[
+                    const Text(
+                      'Información de Administrador',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF003087),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CustomTextField(
+                      controller: TextEditingController(text: _adminProfile!.idAdmin),
+                      labelText: 'ID Administrador',
+                      prefixIcon: Icons.badge,
+                      enabled: false,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: TextEditingController(
+                        text: _adminProfile!.createdDate != null
+                            ? _adminProfile!.createdDate!.toIso8601String().split('T').first
+                            : '',
+                      ),
+                      labelText: 'Fecha de Creación',
+                      prefixIcon: Icons.calendar_today,
+                      enabled: false,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: TextEditingController(
+                        text: _adminProfile!.isActive == true ? 'Activo' : 'Inactivo',
+                      ),
+                      labelText: 'Estado',
+                      prefixIcon: Icons.verified_user,
+                      enabled: false,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: TextEditingController(text: _adminProfile!.role ?? ''),
+                      labelText: 'Rol',
+                      prefixIcon: Icons.security,
+                      enabled: false,
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: TextEditingController(
+                        text: _adminProfile!.inactiveSince != null
+                            ? _adminProfile!.inactiveSince!.toIso8601String().split('T').first
+                            : '',
+                      ),
+                      labelText: 'Inactivo Desde',
+                      prefixIcon: Icons.event_busy,
+                      enabled: false,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/create-student');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.0),
+                              ),
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Crear Estudiante'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/create-professor');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.0),
+                              ),
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Crear Profesor'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (isStudent) ...[
+                    const Text(
+                      'Información de Estudiante',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF003087),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CustomTextField(
+                      controller: _carnetController,
+                      labelText: 'Carnet',
+                      prefixIcon: Icons.card_membership,
+                      enabled: true,
+                      keyboardType: TextInputType.text,
+                      maxLength: 20,
+                    ),
+                    const SizedBox(height: 15),
+
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        labelText: 'Carrera',
+                        prefixIcon: const Icon(Icons.school),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 1.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
+                        ),
+                        fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                        filled: true,
+                      ),
+                      value: _selectedCareerId,
+                      hint: const Text('Selecciona una carrera'),
+                      items: _careers.map((career) {
+                        return DropdownMenuItem<int>(
+                          value: career.careerId,
+                          child: Text(career.name),
+                        );
+                      }).toList(),
+                      onChanged: (int? newValue) {
+                        setState(() {
+                          _selectedCareerId = newValue;
+                        });
                       },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Por favor selecciona una carrera';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 15),
+
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        labelText: 'Tipo de Asistencia',
+                        prefixIcon: const Icon(Icons.help_outline),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 1.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
+                        ),
+                        fillColor: Theme.of(context).inputDecorationTheme.fillColor,
+                        filled: true,
+                      ),
+                      value: _selectedAssistanceTypeId,
+                      hint: const Text('Selecciona un tipo de asistencia'),
+                      items: _assistanceTypes.map((type) {
+                        return DropdownMenuItem<int>(
+                          value: type.assistanceTypeId,
+                          child: Text(type.type),
+                        );
+                      }).toList(),
+                      onChanged: (int? newValue) {
+                        setState(() {
+                          _selectedAssistanceTypeId = newValue;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Por favor selecciona un tipo de asistencia';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 15),
+
+                    CustomTextField(
+                      controller: _admissionTrimesterController,
+                      labelText: 'Trimestre de Admisión (YYYY-MM-DD)',
+                      prefixIcon: Icons.date_range,
+                      keyboardType: TextInputType.datetime,
+                      enabled: true,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (isProfessor) ...[
+                    const Text(
+                      'Información de Profesor',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF003087),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        labelText: 'Facultad',
+                        prefixIcon: const Icon(Icons.account_balance),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                      value: _selectedFacultyId,
+                      items: _faculties.map((fac) {
+                        return DropdownMenuItem<int>(
+                          value: fac.idFaculty,
+                          child: Text(fac.name),
+                        );
+                      }).toList(),
+                      onChanged: (int? newValue) {
+                        setState(() {
+                          _selectedFacultyId = newValue;
+                          if (_selectedDepartmentId != null) {
+                            final dept = _departments.firstWhereOrNull(
+                              (d) => d.idDepartment == _selectedDepartmentId,
+                            );
+                            if (dept == null || dept.idFaculty != newValue) {
+                              _selectedDepartmentId = null;
+                            }
+                          }
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Por favor selecciona una facultad';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 15),
+                    DropdownButtonFormField<int>(
+                      decoration: InputDecoration(
+                        labelText: 'Departamento',
+                        prefixIcon: const Icon(Icons.apartment),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                      value: _selectedDepartmentId,
+                      items: _departments
+                          .where((dept) => _selectedFacultyId == null || dept.idFaculty == _selectedFacultyId)
+                          .map((dept) {
+                        return DropdownMenuItem<int>(
+                          value: dept.idDepartment,
+                          child: Text(dept.dptName),
+                        );
+                      }).toList(),
+                      onChanged: (int? newValue) {
+                        setState(() {
+                          _selectedDepartmentId = newValue;
+                          final dept = _departments.firstWhereOrNull((d) => d.idDepartment == newValue);
+                          if (dept != null) {
+                            _selectedFacultyId = dept.idFaculty;
+                          }
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Por favor selecciona un departamento';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 15),
+                    CustomTextField(
+                      controller: _hireDateProfessorController,
+                      labelText: 'Fecha de Contratación (YYYY-MM-DD)',
+                      prefixIcon: Icons.date_range,
+                      readOnly: true,
+                      onTap: () => _selectDate(context, _hireDateProfessorController),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isUpdatingProfile ? null : _updateUserProfile,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
@@ -780,254 +1090,100 @@ class _ProfilePageState extends State<ProfilePage> {
                         backgroundColor: Theme.of(context).primaryColor,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Crear Estudiante'),
+                      child: _isUpdatingProfile
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Actualizar Perfil'),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/create-professor');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.0),
-                        ),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Crear Profesor'),
-                    ),
-                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-              const SizedBox(height: 20),
-            ]
-          ,
+            ),
 
-            if (isStudent) ...[
-              const Text(
-                'Información de Estudiante',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF003087),
+            // Password Change Tab
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _passwordFormKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Cambiar contraseña",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: _newPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Nueva contraseña",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingresa una contraseña';
+                        }
+                        if (value.length < 6) {
+                          return 'La contraseña debe tener al menos 6 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: "Confirmar nueva contraseña",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value != _newPasswordController.text) {
+                          return 'Las contraseñas no coinciden';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (_passwordErrorMessage != null)
+                      Text(
+                        _passwordErrorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    if (_passwordSuccessMessage != null)
+                      Text(
+                        _passwordSuccessMessage!,
+                        style: const TextStyle(color: Colors.green),
+                      ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isUpdatingPassword ? null : _updatePassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF003087),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: _isUpdatingPassword
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                "Actualizar contraseña",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 10),
-              CustomTextField(
-                controller: _carnetController,
-                labelText: 'Carnet',
-                prefixIcon: Icons.card_membership,
-                enabled: true,
-                keyboardType: TextInputType.text,
-                maxLength: 20,
-              ),
-              const SizedBox(height: 15),
-
-              DropdownButtonFormField<int>(
-                decoration: InputDecoration(
-                  labelText: 'Carrera',
-                  prefixIcon: const Icon(Icons.school),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 1.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
-                  ),
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
-                  filled: true,
-                ),
-                value: _selectedCareerId,
-                hint: const Text('Selecciona una carrera'),
-                items: _careers.map((career) {
-                  return DropdownMenuItem<int>(
-                    value: career.careerId,
-                    child: Text(career.name),
-                  );
-                }).toList(),
-                onChanged: (int? newValue) {
-                  setState(() {
-                    _selectedCareerId = newValue;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Por favor selecciona una carrera';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-
-              DropdownButtonFormField<int>(
-                decoration: InputDecoration(
-                  labelText: 'Tipo de Asistencia',
-                  prefixIcon: const Icon(Icons.help_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 1.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2.0),
-                  ),
-                  fillColor: Theme.of(context).inputDecorationTheme.fillColor,
-                  filled: true,
-                ),
-                value: _selectedAssistanceTypeId,
-                hint: const Text('Selecciona un tipo de asistencia'),
-                items: _assistanceTypes.map((type) {
-                  return DropdownMenuItem<int>(
-                    value: type.assistanceTypeId,
-                    child: Text(type.type),
-                  );
-                }).toList(),
-                onChanged: (int? newValue) {
-                  setState(() {
-                    _selectedAssistanceTypeId = newValue;
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Por favor selecciona un tipo de asistencia';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-
-              CustomTextField(
-                controller: _admissionTrimesterController,
-                labelText: 'Trimestre de Admisión (YYYY-MM-DD)',
-                prefixIcon: Icons.date_range,
-                keyboardType: TextInputType.datetime,
-                enabled: true,
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            if (isProfessor) ...[
-              const Text(
-                'Información de Profesor',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF003087),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              DropdownButtonFormField<int>(
-                decoration: InputDecoration(
-                  labelText: 'Facultad',
-                  prefixIcon: const Icon(Icons.account_balance),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                ),
-                value: _selectedFacultyId,
-                items: _faculties.map((fac) {
-                  return DropdownMenuItem<int>(
-                    value: fac.idFaculty,
-                    child: Text(fac.name),
-                  );
-                }).toList(),
-                onChanged: (int? newValue) {
-                  setState(() {
-                    _selectedFacultyId = newValue;
-                    if (_selectedDepartmentId != null) {
-                      final dept = _departments.firstWhereOrNull(
-                        (d) => d.idDepartment == _selectedDepartmentId,
-                      );
-                      if (dept == null || dept.idFaculty != newValue) {
-                        _selectedDepartmentId = null;
-                      }
-                    }
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Por favor selecciona una facultad';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-              DropdownButtonFormField<int>(
-                decoration: InputDecoration(
-                  labelText: 'Departamento',
-                  prefixIcon: const Icon(Icons.apartment),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                ),
-                value: _selectedDepartmentId,
-                items: _departments
-                    .where((dept) => _selectedFacultyId == null || dept.idFaculty == _selectedFacultyId)
-                    .map((dept) {
-                  return DropdownMenuItem<int>(
-                    value: dept.idDepartment,
-                    child: Text(dept.dptName),
-                  );
-                }).toList(),
-                onChanged: (int? newValue) {
-                  setState(() {
-                    _selectedDepartmentId = newValue;
-                    final dept = _departments.firstWhereOrNull((d) => d.idDepartment == newValue);
-                    if (dept != null) {
-                      _selectedFacultyId = dept.idFaculty;
-                    }
-                  });
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Por favor selecciona un departamento';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-              CustomTextField(
-                controller: _hireDateProfessorController,
-                labelText: 'Fecha de Contratación (YYYY-MM-DD)',
-                prefixIcon: Icons.date_range,
-                readOnly: true,
-                onTap: () => _selectDate(context, _hireDateProfessorController),
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isUpdatingProfile ? null : _updateUserProfile,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: _isUpdatingProfile
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Actualizar Perfil'),
               ),
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
+
 }
