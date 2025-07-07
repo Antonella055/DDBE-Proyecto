@@ -126,4 +126,20 @@ class AuthRepositoryImpl implements AuthRepository {
       rethrow;
     }
   }
+  
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await remoteDataSource.sendPasswordResetEmail(email);
+    } on AuthExceptionCustom catch (e) {
+      // Manejo de excepciones específicas de autenticación
+      throw Exception('Error de autenticación: $e');
+    } on ServerException catch (e) {
+      // Manejo de excepciones del servidor
+      throw Exception('Error del servidor al enviar el correo de restablecimiento: $e');
+    } catch (e) {
+      // Manejo de errores específicos
+      throw Exception('Error al enviar el correo de restablecimiento: $e');
+    }
+}
 }
