@@ -198,11 +198,13 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
+                                    onPressed:
+                                        () => Navigator.pop(context, false),
                                     child: const Text('Cancelar'),
                                   ),
                                   TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
+                                    onPressed:
+                                        () => Navigator.pop(context, true),
                                     child: const Text('Restar'),
                                   ),
                                 ],
@@ -211,7 +213,8 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
                           );
                           if (result == true &&
                               restarController.text.trim().isNotEmpty &&
-                              int.tryParse(restarController.text.trim()) != null) {
+                              int.tryParse(restarController.text.trim()) !=
+                                  null) {
                             await registrarHoras(
                               DateTime.now(),
                               -int.parse(restarController.text.trim()),
@@ -301,24 +304,69 @@ class _HorasCulminadasScreenState extends State<HorasCulminadasScreen> {
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        TextButton(
                           onPressed: () {
                             final horasText = horasController.text.trim();
-                            final descripcionText = descripcionController.text.trim();
-                            final isInt = int.tryParse(horasText) != null;
+                            final descripcionText =
+                                descripcionController.text.trim();
+                            final newHours = int.tryParse(horasText);
 
-                            if (!isInt) {
+                            // Validación 1: Horas individuales no mayores a 120
+                            if (newHours == null || newHours <= 0) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Por favor, ingresa solo números enteros en el campo de horas.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Por favor, ingresa un número de horas válido y positivo.',
+                                  ),
+                                ),
                               );
                               return;
                             }
-                            if (horasText.isEmpty || descripcionText.isEmpty || fechaSeleccionada == null) {
+                            if (newHours > 120) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Completa todos los campos y selecciona una fecha.')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Las horas ingresadas no pueden ser mayores a 120.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Validación 2: Suma total de horas no mayor a 120
+                            // Se recalcula totalHoras aquí para asegurar que sea el valor más reciente
+                            // antes de la suma, aunque el build ya lo tiene, es buena práctica.
+                            int currentTotalHours = _horas.fold(
+                              0,
+                              (sum, item) =>
+                                  sum +
+                                  (item['horas'] is int
+                                      ? item['horas'] as int
+                                      : int.tryParse(
+                                            item['horas']?.toString() ?? '0',
+                                          ) ??
+                                          0),
+                            );
+
+                            if ((currentTotalHours + newHours) > 120) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'La suma total de horas no puede exceder las 120.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (horasText.isEmpty ||
+                                descripcionText.isEmpty ||
+                                fechaSeleccionada == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Completa todos los campos y selecciona una fecha.',
+                                  ),
+                                ),
                               );
                               return;
                             }
