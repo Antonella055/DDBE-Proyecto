@@ -11,19 +11,18 @@ const Color kDarkBlueColor = Color(0xFF003087);
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
-  final String
-  currentRoute; // Añadimos esta propiedad para saber la ruta actual
+  final String currentRoute;
   final VoidCallback? onProfileIconPressed;
-  final List<Widget>? actions; // <--- Agrega esto
-  final bool isProfessor; // <--- Agrega esto
+  final List<Widget>? actions;
+  final bool isProfessor;
 
   const CustomAppBar({
     super.key,
     required this.scaffoldKey,
-    required this.currentRoute, // Ahora es un parámetro requerido
+    required this.currentRoute,
     this.onProfileIconPressed,
-    this.actions, // <--- Agrega esto
-    this.isProfessor = false, // <--- Agrega esto
+    this.actions,
+    this.isProfessor = false,
   });
 
   static final SupabaseService _supabaseService = SupabaseService();
@@ -32,24 +31,23 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   void _showLoginRequiredDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Inicio de sesión requerido'),
-            content: const Text('Debes iniciar sesión para usar el chat.'),
-            actions: [
-              TextButton(
-                child: const Text('Cancelar'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              ElevatedButton(
-                child: const Text('Ir a Login'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushNamed('/login');
-                },
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Inicio de sesión requerido'),
+        content: const Text('Debes iniciar sesión para usar el chat.'),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.of(context).pop(),
           ),
+          ElevatedButton(
+            child: const Text('Ir a Login'),
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushNamed('/login');
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -115,7 +113,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           // Logo de la universidad
           GestureDetector(
             onTap: () {
-              // Al presionar el logo, navega al home
               Navigator.of(context).pushNamed('/home');
             },
             child: Image.network(
@@ -123,7 +120,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 'images',
                 'upload/logo.png',
               ),
-              height: 40, // Logo más pequeño
+              height: 40,
               errorBuilder: (context, error, stackTrace) {
                 developer.log(
                   'Error loading logo.png: $error',
@@ -147,7 +144,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     _buildAppBarMenuItem(context, 'DDBE', '/home'),
                     _buildAppBarMenuItem(context, 'Noticias', '/news'),
                     _buildAppBarMenuItem(context, 'Cronograma', '/calendar'),
-                    _buildAppBarMenuItem(context, 'Postúlate', '/postulation'),
+                    _buildPostulateMenu(context),
                     _buildAppBarMenuItem(context, 'Contacto', '/contact'),
                     _buildAppBarMenuItem(
                       context,
@@ -194,7 +191,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   icon: Icon(
                     Icons.menu,
                     color: const Color.fromARGB(255, 59, 59, 59),
-                  ), // Color de menú del manual de marca
+                  ),
                   onPressed: () => scaffoldKey.currentState?.openEndDrawer(),
                 ),
             ],
@@ -205,7 +202,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(60.0); // AppBar más finito, de 60.0
+  Size get preferredSize => const Size.fromHeight(60.0);
 
   Widget _buildAppBarMenuItem(
     BuildContext context,
@@ -222,10 +219,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: Text(
             text,
             style: TextStyle(
-              color:
-                  isCurrentRoute
-                      ? kOrangeColor
-                      : const Color.fromARGB(255, 59, 59, 59),
+              color: isCurrentRoute
+                  ? kOrangeColor
+                  : const Color.fromARGB(255, 59, 59, 59),
               fontWeight: FontWeight.w500,
               fontSize: 16,
               fontFamily: 'Roboto',
@@ -264,24 +260,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               }
             }
           },
-          itemBuilder:
-              (context) => [
-                const PopupMenuItem<String>(
-                  value: 'horas_culminadas',
-                  child: Text('Ver horas culminadas'),
-                ),
-                if (isProfessor)
-                  const PopupMenuItem<String>(
-                    value: 'dashboard_profesor',
-                    child: Text('Ir al Dashboard de Profesor'),
-                  ),
-                // Otros PopupMenuItem si quieres más opciones
-              ],
+          itemBuilder: (context) => [
+            const PopupMenuItem<String>(
+              value: 'horas_culminadas',
+              child: Text('Ver horas culminadas'),
+            ),
+            if (isProfessor)
+              const PopupMenuItem<String>(
+                value: 'dashboard_profesor',
+                child: Text('Ir al Dashboard de Profesor'),
+              ),
+          ],
         ),
       );
     }
 
-    // Si no es dropdown, retorna el InkWell normal
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: InkWell(
@@ -291,15 +284,52 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Text(
           text,
           style: TextStyle(
-            color:
-                isCurrentRoute
-                    ? kOrangeColor
-                    : const Color.fromARGB(255, 59, 59, 59),
+            color: isCurrentRoute
+                ? kOrangeColor
+                : const Color.fromARGB(255, 59, 59, 59),
             fontWeight: FontWeight.w500,
             fontSize: 16,
             fontFamily: 'Roboto',
           ),
         ),
+      ),
+    );
+  }
+
+  // Nuevo método para el menú desplegable "Postúlate"
+  Widget _buildPostulateMenu(BuildContext context) {
+    final bool isCurrentRoute = (currentRoute == '/postulation' || currentRoute == '/professor_postulation');
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: PopupMenuButton<String>(
+        child: Text(
+          'Postúlate',
+          style: TextStyle(
+            color: isCurrentRoute
+                ? kOrangeColor
+                : const Color.fromARGB(255, 59, 59, 59),
+            fontWeight: FontWeight.w500,
+            fontSize: 16,
+            fontFamily: 'Roboto',
+          ),
+        ),
+        onSelected: (value) {
+          if (value == 'estudiante') {
+            Navigator.of(context).pushNamed('/postulation');
+          } else if (value == 'profesor') {
+            Navigator.of(context).pushNamed('/professor_postulation');
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem<String>(
+            value: 'estudiante',
+            child: Text('Como estudiante'),
+          ),
+          const PopupMenuItem<String>(
+            value: 'profesor',
+            child: Text('Como profesor'),
+          ),
+        ],
       ),
     );
   }

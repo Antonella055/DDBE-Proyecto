@@ -1,10 +1,12 @@
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
+import 'package:ayudantia_software/features/home/presentation/widgets/chat_widget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:developer' as developer;
 
+import 'package:ayudantia_software/features/home/presentation/pages/professor_postulation_screen.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/login_page.dart';
 import 'package:ayudantia_software/features/auth/presentation/pages/profile_page.dart';
 import 'package:ayudantia_software/features/home/presentation/pages/home_screen.dart';
@@ -132,6 +134,7 @@ class _MyAppState extends State<MyApp> {
           return HorasCulminadasScreen(estudianteId: idEstudiante);
         },
         '/postulation': (context) => const AyudantiaPage(),
+        '/professor_postulation': (context) => const ProfessorPostulationPage(),
         '/chat': (context) => const ChatPage(),
         '/create-student': (context) => const AdminCreateStudent(),
         '/create-professor': (context) => const AdminCreateProfessor(),
