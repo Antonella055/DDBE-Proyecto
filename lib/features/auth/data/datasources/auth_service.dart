@@ -24,6 +24,30 @@ class AuthService {
     final user = session?.user;
     return user?.email;
   }
+   Future<void> sendPasswordResetEmail(String email) async {
+    await _supabase.auth.resetPasswordForEmail(email);
+  }
+  
+   Future<void> sendMagicLink(String email) async {
+    await _supabase.auth.signInWithOtp(
+      email: email,
+      emailRedirectTo: 'tu-app://reset-password', // Configura esto en Supabase
+    );
+  }
+
+  // 2. Restablecer contraseña directamente (requiere configuración especial)
+  Future<void> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    // Esto requiere habilitar "Password Recovery" en Supabase
+    // To update the password, use updateUser with the new password after verifying the user
+    await _supabase.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+  }
+
+ 
 
   
 }
