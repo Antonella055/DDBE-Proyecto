@@ -12,6 +12,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   Future<void> _login() async {
@@ -24,14 +25,8 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-      if (response.user != null) {
-        if (mounted) {
-          Navigator.of(context).pushReplacementNamed('/home');
-        }
-      } else {
-        setState(() {
-          _errorMessage = 'Correo o contraseña incorrectos.';
-        });
+      if (response.user != null && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
       }
     } on AuthException catch (e) {
       setState(() {
@@ -42,96 +37,120 @@ class _LoginPageState extends State<LoginPage> {
         _errorMessage = 'Error inesperado: $e';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _showResetPasswordEmailModal() {
     final _resetEmailController = TextEditingController();
+    bool _isResetting = false;
     
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Restablecer contraseña'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Ingresa tu correo electrónico para recibir el enlace de restablecimiento:'),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _resetEmailController,
-                decoration: const InputDecoration(
-                  labelText: 'Correo electrónico',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Restablecer contraseña'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Ingresa tu correo electrónico para restablecer tu contraseña a "contraseña"'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _resetEmailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo electrónico',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  if (_isResetting) const SizedBox(height: 16),
+                  if (_isResetting) const CircularProgressIndicator(),
+                ],
               ),
-            ],
+              actions: [
+                TextButton(
+                  onPressed: _isResetting ? null : () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: _isResetting 
+                      ? null
+                      : () async {
+                          final email = _resetEmailController.text.trim();
+                          if (email.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Por favor ingresa tu correo electrónico'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
 
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final email = _resetEmailController.text.trim();
-                if (email.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Por favor ingresa tu correo electrónico'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
+                          setState(() => _isResetting = true);
 
-                try {
-                  await Supabase.instance.client.auth.resetPasswordForEmail(email);
-                  
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Correo de recuperación enviado a $email'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } on AuthException catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: ${e.message}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error al enviar el correo: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Enviar'),
-            ),
-          ],
+                          try {
+                            // Primero iniciamos sesión con el email (sin contraseña)
+                            await Supabase.instance.client.auth.signInWithOtp(
+                              email: email,
+                              shouldCreateUser: false,
+                            );
+
+                            // Luego actualizamos la contraseña
+                            final updateResponse = await Supabase.instance.client.auth.updateUser(
+                              UserAttributes(
+                                password: 'contraseña',
+                              ),
+                            );
+
+                            if (updateResponse.user != null) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Contraseña actualizada a "contraseña"'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } on AuthException catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: ${e.message}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error al actualizar contraseña: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          } finally {
+                            setState(() => _isResetting = false);
+                          }
+                        },
+                  child: const Text('Restablecer'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
-  }
+}
 
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    const String backgroundUrl =
-        'https://lbxkcilriktsmfiruvfj.supabase.co/storage/v1/object/public/backgrounds/backgrounds/loginpage_background.jpg';
+    const String backgroundUrl = 'https://lbxkcilriktsmfiruvfj.supabase.co/storage/v1/object/public/backgrounds/backgrounds/loginpage_background.jpg';
 
     return Scaffold(
       body: Stack(
@@ -140,16 +159,14 @@ class _LoginPageState extends State<LoginPage> {
           Image.network(
             backgroundUrl,
             fit: BoxFit.cover,
-            errorBuilder:
-                (context, error, stackTrace) => Container(
-                  color: Colors.grey,
-                  child: const Center(
-                    child: Icon(Icons.broken_image, size: 60),
-                  ),
-                ),
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey,
+              child: const Center(
+                child: Icon(Icons.broken_image, size: 60),
+              ),
+            ),
           ),
           Container(color: Colors.black.withOpacity(0.2)),
-          // Botón de volver en la esquina superior izquierda
           Positioned(
             top: 24,
             left: 24,
@@ -171,7 +188,6 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
                     color: const Color(0xFF003087),
-
                     width: 2,
                   ),
                   boxShadow: [
@@ -191,9 +207,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     Text(
                       'Iniciar sesión',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         color: const Color(0xFFFF8000),
                         fontWeight: FontWeight.bold,
                       ),
@@ -224,19 +238,30 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 20),
                     TextField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       maxLength: 40,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Contraseña',
-                        prefixIcon: Icon(Icons.lock),
-                        border: OutlineInputBorder(
+                        prefixIcon: const Icon(Icons.lock),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                        border: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(30)),
                         ),
-                        enabledBorder: OutlineInputBorder(
+                        enabledBorder: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(30)),
                           borderSide: BorderSide(color: Color(0xFF003087)),
                         ),
-                        focusedBorder: OutlineInputBorder(
+                        focusedBorder: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(30)),
                           borderSide: BorderSide(color: Color(0xFFFF8000), width: 2),
                         ),
@@ -277,17 +302,16 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child:
-                            _isLoading
-                                ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                : const Text('Ingresar'),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Ingresar'),
                       ),
                     ),
                   ],
@@ -307,4 +331,3 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 }
-

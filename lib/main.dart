@@ -1,5 +1,5 @@
 import 'package:ayudantia_software/features/auth/presentation/pages/admin_create_professor.dart';
-import 'package:ayudantia_software/features/auth/presentation/pages/reset_password_page.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
